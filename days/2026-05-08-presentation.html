@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代码审查 | 2026-05-08</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/vs2015.min.css">
+<style>
+  :root {
+    --bg-dark: #1e1e2e;
+    --bg-code: #1a1a2e;
+    --bg-card: #2a2a3e;
+    --bg-card-good: #1a2e1a;
+    --bg-card-bad: #2e1a1a;
+    --text-primary: #d4d4d4;
+    --text-secondary: #9cdcfe;
+    --accent-blue: #569cd6;
+    --accent-green: #4ec9b0;
+    --accent-red: #f44747;
+    --accent-yellow: #dcdcaa;
+    --accent-orange: #ce9178;
+    --accent-purple: #c586c0;
+    --border-color: #3e3e5e;
+  }
+
+  .reveal-viewport {
+    background: var(--bg-dark);
+  }
+
+  .reveal {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: var(--text-primary);
+  }
+
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 700;
+  }
+
+  .reveal h1 { font-size: 1.7em; color: var(--accent-blue); }
+  .reveal h2 { font-size: 1.15em; color: var(--accent-green); border-bottom: 2px solid var(--border-color); padding-bottom: 0.3em; }
+  .reveal h3 { font-size: 0.95em; color: var(--accent-yellow); }
+
+  .reveal p, .reveal li { font-size: 0.78em; }
+
+  .reveal section { text-align: left; }
+
+  /* Code blocks */
+  .reveal pre {
+    width: 100%;
+    margin: 0.5em 0;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .reveal pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.45em;
+    line-height: 1.5;
+    padding: 1em !important;
+    max-height: 520px;
+    overflow-y: auto;
+    background: var(--bg-code) !important;
+  }
+  .reveal pre code::-webkit-scrollbar { width: 6px; }
+  .reveal pre code::-webkit-scrollbar-track { background: transparent; }
+  .reveal pre code::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+  /* Inline code */
+  .reveal code:not([class*="hljs"]):not(pre code) {
+    background: var(--bg-card);
+    color: var(--accent-orange);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1em 1.2em;
+    margin: 0.5em 0;
+  }
+  .card-good {
+    background: var(--bg-card-good);
+    border-color: #3e6e3e;
+  }
+  .card-bad {
+    background: var(--bg-card-bad);
+    border-color: #6e3e3e;
+  }
+  .card-pattern {
+    background: linear-gradient(135deg, var(--bg-card), #2a2a4e);
+    border-left: 4px solid var(--accent-purple);
+  }
+  .card h4 { margin-top: 0; color: var(--accent-green); }
+  .card-bad h4 { color: var(--accent-red); }
+  .card-pattern h4 { color: var(--accent-purple); }
+
+  /* Two column layout */
+  .two-col {
+    display: flex;
+    gap: 1em;
+  }
+  .two-col > div { flex: 1; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 0.2em 0.6em;
+    border-radius: 4px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-right: 0.4em;
+  }
+  .tag-java { background: #b07219; color: white; }
+  .tag-critical { background: var(--accent-red); color: white; }
+  .tag-warning { background: #b5860d; color: white; }
+  .tag-good { background: #2ea043; color: white; }
+
+  /* Comparison table */
+  .reveal table {
+    font-size: 0.7em;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+  }
+  .reveal table th {
+    background: var(--bg-card);
+    color: var(--accent-blue);
+    border-bottom: 2px solid var(--accent-blue);
+    padding: 0.6em 0.8em;
+    font-weight: 600;
+  }
+  .reveal table td {
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5em 0.8em;
+    color: var(--text-primary);
+  }
+  .reveal table tr:hover td { background: rgba(86,156,214,0.08); }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    padding: 0.35em 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.85em;
+  }
+  .checklist li::before { margin-right: 0.5em; }
+
+  /* Highlight markers */
+  .hl-red { color: var(--accent-red); font-weight: 600; }
+  .hl-green { color: var(--accent-green); font-weight: 600; }
+  .hl-yellow { color: var(--accent-yellow); font-weight: 600; }
+  .hl-blue { color: var(--accent-blue); font-weight: 600; }
+  .hl-orange { color: var(--accent-orange); font-weight: 600; }
+  .hl-purple { color: var(--accent-purple); font-weight: 600; }
+
+  /* Diff markers */
+  .diff-del { background: rgba(244,71,71,0.15); border-left: 3px solid var(--accent-red); padding-left: 0.5em; }
+  .diff-add { background: rgba(78,201,176,0.12); border-left: 3px solid var(--accent-green); padding-left: 0.5em; }
+
+  /* Star rating */
+  .stars { color: var(--accent-yellow); letter-spacing: 2px; }
+
+  /* Progress bar override */
+  .reveal .progress { color: var(--accent-blue); height: 4px; }
+
+  /* Slide number */
+  .reveal .slide-number { color: var(--text-secondary); background: rgba(30,30,46,0.7); font-size: 0.6em; }
+
+  /* Cover page styling */
+  .cover-subtitle { color: var(--text-secondary); font-size: 1.1em; margin-top: 0.5em; }
+  .cover-tags { margin-top: 1.5em; display: flex; gap: 0.8em; justify-content: center; flex-wrap: wrap; }
+  .cover-tag {
+    padding: 0.4em 1em;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  /* Fragment overrides */
+  .reveal .fragment { opacity: 0.3; transition: all 0.3s ease; }
+  .reveal .fragment.visible { opacity: 1; }
+
+  /* Small text */
+  .small { font-size: 0.75em; color: var(--text-secondary); }
+  .medium { font-size: 0.85em; }
+
+  /* Quote block */
+  .quote-block {
+    border-left: 4px solid var(--accent-purple);
+    padding: 0.8em 1.2em;
+    background: rgba(197,134,192,0.08);
+    border-radius: 0 8px 8px 0;
+    margin: 0.8em 0;
+    font-style: italic;
+    color: var(--text-primary);
+  }
+
+  /* Footer */
+  .slide-footer {
+    position: absolute;
+    bottom: 1em;
+    left: 1em;
+    font-size: 0.5em;
+    color: rgba(255,255,255,0.25);
+  }
+
+  /* Flex grid for pattern cards */
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8em;
+  }
+
+  /* Score bar */
+  .score-bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border-color);
+    margin-right: 0.5em;
+  }
+  .score-fill { background: var(--accent-green); border-radius: 4px; height: 100%; }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.6em;
+    line-height: 1.6;
+    background: var(--bg-code);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .reveal .slides {
+      transform: none !important;
+      width: 100vw !important;
+      height: auto !important;
+      left: auto !important;
+      top: auto !important;
+    }
+    .reveal .slides section {
+      min-height: 100vh;
+      width: 100vw !important;
+      position: relative !important;
+      transform: none !important;
+    }
+    .reveal {
+      width: 100vw !important;
+      height: auto !important;
+    }
+    .reveal h1 { font-size: 1.4em !important; }
+    .reveal h2 { font-size: 1.1em !important; }
+    .reveal h3 { font-size: 1.0em !important; }
+    .reveal p, .reveal li { font-size: 0.95em !important; }
+    .reveal pre code {
+      font-size: 0.72em !important;
+      max-height: 350px !important;
+      padding: 0.8em !important;
+    }
+    .reveal table { font-size: 0.82em !important; }
+    .card { padding: 0.8em !important; }
+    .two-col { flex-direction: column !important; }
+    .pattern-grid { grid-template-columns: 1fr !important; }
+    .tag { font-size: 0.8em !important; }
+    .small { font-size: 0.85em !important; }
+    .medium { font-size: 0.95em !important; }
+    .checklist li { font-size: 0.9em !important; }
+    .cover-subtitle { font-size: 1em !important; }
+    .arch-diagram { font-size: 0.72em; }
+  }
+</style>
+</head>
+<body>
+
+<div class="reveal">
+<div class="slides">
+
+<!-- ===== SLIDE 1: Cover ===== -->
+<section data-transition="zoom" style="text-align: center;">
+  <h1 style="font-size: 2.0em; border: none; color: var(--accent-blue);">🔍 今日代码审查</h1>
+  <p class="cover-subtitle">@Transactional 静默失败 — 你的事务真的生效了吗？</p>
+  <p style="color: var(--text-secondary); margin-top: 0.3em; font-size: 0.9em;">2026-05-08 · Day 3</p>
+  <div class="cover-tags" style="margin-top: 2em;">
+    <span class="cover-tag" style="border-color: #b07219; color: #b07219;">Java</span>
+    <span class="cover-tag" style="border-color: var(--accent-red); color: var(--accent-red);">@Transactional</span>
+    <span class="cover-tag" style="border-color: var(--accent-purple); color: var(--accent-purple);">Virtual Thread</span>
+  </div>
+  <p class="small" style="margin-top: 2.5em;">← → 方向键翻页 &nbsp;|&nbsp; 代码块可滚动</p>
+</section>
+
+<!-- ===== SLIDE 2: Overview ===== -->
+<section>
+  <h2>📋 今日审查概览</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em;">
+    <div>
+      <h3>审查范围</h3>
+      <div class="card">
+        <p><span class="tag tag-java">Java</span> <strong>样本A</strong> — Checked异常导致资金丢失</p>
+        <p class="small">银行跨行转账：IOException不回滚，钱无声消失</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-java">Java</span> <strong>样本B</strong> — 自调用+REQUIRES_NEW死锁</p>
+        <p class="small">this.saveOrder()绕过代理 + 连接池耗尽无异常</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-java">Java</span> <strong>样本C</strong> — private+readOnly双重陷阱</p>
+        <p class="small">private方法注解无效 + readOnly静默丢弃写入</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-java">Java</span> <strong>样本D</strong> — Virtual Thread+synchronized</p>
+        <p class="small">载体线程pin住 + 共享Connection + 遍历删除异常</p>
+      </div>
+    </div>
+    <div>
+      <h3>关键发现</h3>
+      <div class="card card-bad">
+        <h4>🔴 Checked异常默认提交</h4>
+        <p class="small">IOException不触发回滚，from扣款已flush → to入账未执行 → 资金凭空消失</p>
+      </div>
+      <div class="card card-bad">
+        <h4>🔴 REQUIRES_NEW死锁</h4>
+        <p class="small">10并发×2连接 > HikariCP默认10 → 连接池耗尽 → 应用冻结无异常</p>
+      </div>
+      <div class="card card-good">
+        <h4>✅ 三段式事务架构</h4>
+        <p class="small">校验前置 → DB事务化 → 副作用AFTER_COMMIT</p>
+      </div>
+      <div class="quote-block" style="font-size: 0.8em;">
+        核心线索：<strong>你的事务真的生效了吗？</strong><br>5个Bug共享同一本质——<strong>绕过了代理</strong>。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 3: Sample A - Bad Code ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本A：Checked异常导致资金丢失</h2>
+  <p class="medium">银行跨行转账 — IOException抛出时，from已扣款，to未入账，事务却提交了</p>
+  <pre><code class="language-java">@Service
+public class TransferService {
+
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private ComplianceClient complianceClient;
+    @Autowired private TransferLogRepository transferLogRepository;
+
+    @Transactional
+    public TransferResult transfer(Long fromId, Long toId, BigDecimal amount)
+            throws IOException {
+        // 1. 扣款
+        Account from = accountRepository.findById(fromId).orElseThrow();
+        from.debit(amount);
+        accountRepository.save(from);  // ← 已持久化
+
+        // 2. 合规校验（外部API调用）
+        complianceClient.checkAntiMoneyLaundering(from, amount);  // ← 抛IOException
+
+        // 3. 入账 — IOException时这行从未执行
+        Account to = accountRepository.findById(toId).orElseThrow();
+        to.credit(amount);
+        accountRepository.save(to);
+
+        // 4. 记录转账日志
+        transferLogRepository.save(new TransferLog(fromId, toId, amount));
+        return TransferResult.success();
+    }
+}</code></pre>
+  <p class="small" style="margin-top: 0.3em;">来源：<a href="https://tools.30tools.com/blogs/paszekdev/spring-boot-transactional-5-bugs-that-are-probably-in-your-production-code-3h5f" style="color: var(--accent-blue);">Dominik Paszek, "Spring Boot @Transactional: 5 Bugs", 2026.03</a></p>
+</section>
+
+<!-- ===== SLIDE 4: Sample A - Analysis ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本A：四层审查发现</h2>
+  <div class="two-col">
+    <div>
+      <div class="card card-bad">
+        <h4>🔴 致命问题</h4>
+        <ul style="font-size: 0.85em;">
+          <li><span class="hl-red">❌ Checked异常不回滚</span> — IOException是checked，Spring默认提交事务</li>
+          <li><span class="hl-red">❌ 外部调用无超时保护</span> — complianceClient长时间无响应，事务一直挂起</li>
+          <li><span class="hl-red">❌ 事务内远程调用</span> — 网络IO导致长事务，锁住数据库资源</li>
+          <li><span class="hl-red">❌ 并发重复转账</span> — 缺少乐观锁或SELECT FOR UPDATE</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>🟡 重要问题</h4>
+        <ul style="font-size: 0.85em;">
+          <li>账户不存在时 <code>orElseThrow()</code> 默认异常对用户无意义</li>
+          <li>金额为0或负数无校验</li>
+          <li>TransferLog与主事务耦合</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top: 0.5em;">
+        <h4>🤖 AI最不确定的3个地方</h4>
+        <div style="font-size: 0.82em;">
+          <p>1. complianceClient如果抛RuntimeException？——反而回滚，但不可控</p>
+          <p>2. save()是否立即flush？——取决于JPA实现</p>
+          <p>3. debit()内部是否允许透支？——不确定</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 5: Sample A - Fix ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本A：修复方案</h2>
+  <pre><code class="language-java">@Service
+public class TransferService {
+
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private ComplianceClient complianceClient;
+    @Autowired private ApplicationEventPublisher eventPublisher;
+
+    // 先校验，再开事务——缩短事务范围
+    public TransferResult transfer(Long fromId, Long toId, BigDecimal amount) throws IOException {
+        // 1. 合规校验（事务外，失败则直接返回，不浪费事务资源）
+        Account from = accountRepository.findById(fromId).orElseThrow();
+        complianceClient.checkAntiMoneyLaundering(from, amount);
+        
+        // 2. 事务内只做DB操作
+        return doTransfer(fromId, toId, amount);
+    }
+
+    @Transactional(rollbackFor = Exception.class)  // ← 关键修复
+    public TransferResult doTransfer(Long fromId, Long toId, BigDecimal amount) {
+        Account from = accountRepository.findById(fromId)
+                .orElseThrow(() -&gt; new BusinessException("转出账户不存在"));
+        Account to = accountRepository.findById(toId)
+                .orElseThrow(() -&gt; new BusinessException("转入账户不存在"));
+        if (amount.compareTo(BigDecimal.ZERO) &lt;= 0) {
+            throw new BusinessException("转账金额必须大于0");
+        }
+        from.debit(amount);
+        to.credit(amount);
+        accountRepository.save(from);
+        accountRepository.save(to);
+
+        // 异步记录日志，不阻塞主事务
+        eventPublisher.publishEvent(new TransferCompletedEvent(fromId, toId, amount));
+        return TransferResult.success();
+    }
+}</code></pre>
+  <table style="font-size: 0.62em; margin-top: 0.5em;">
+    <thead><tr><th>检查项</th><th>风险</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>@Transactional无rollbackFor</td><td><span class="tag tag-critical">🔴 Critical</span></td><td>checked异常默认提交，银行场景必加rollbackFor=Exception.class</td></tr>
+      <tr><td>事务内远程调用</td><td><span class="tag tag-critical">🔴 Critical</span></td><td>网络IO导致长事务，应前置到事务外</td></tr>
+      <tr><td>账户余额并发安全</td><td><span class="tag tag-critical">🔴 Critical</span></td><td>缺少乐观锁/悲观锁，需@Version或SELECT FOR UPDATE</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== SLIDE 6: Sample B - Bad Code ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本B：自调用+REQUIRES_NEW死锁</h2>
+  <p class="medium">订单服务 — this.saveOrder()绕过代理 + 审计服务独立事务耗尽连接池</p>
+  <pre><code class="language-java">@Service
+public class PaymentOrderService {
+
+    @Autowired private OrderRepository orderRepository;
+    @Autowired private AuditService auditService;
+    @Autowired private RiskCheckService riskCheckService;
+
+    public void createPaymentOrder(PaymentOrder order) {
+        riskCheckService.validate(order);
+        saveOrder(order);  // ← this.saveOrder()，绕过代理！
+        auditService.logAudit("Order created: " + order.getId());
+    }
+
+    @Transactional
+    public void saveOrder(PaymentOrder order) {
+        orderRepository.save(order);
+        order.getItems().forEach(item -&gt; {
+            item.setOrderId(order.getId());
+        });
+        // 异常 → 不回滚！因为事务从未开启
+    }
+}
+
+@Service
+public class AuditService {
+    @Autowired private AuditLogRepository auditRepository;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logAudit(String message) {
+        auditRepository.save(new AuditLog(message));
+    }
+}</code></pre>
+  <p class="small" style="margin-top: 0.3em;">来源：<a href="https://tools.30tools.com/blogs/paszekdev/spring-boot-transactional-5-bugs-that-are-probably-in-your-production-code-3h5f" style="color: var(--accent-blue);">Dominik Paszek, "Spring Boot @Transactional: 5 Bugs", 2026.03</a></p>
+</section>
+
+<!-- ===== SLIDE 7: Sample B - Analysis + Fix ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本B：审查分析与修复</h2>
+  <div class="two-col">
+    <div>
+      <div class="card card-bad">
+        <h4>🔴 致命问题</h4>
+        <ul style="font-size: 0.82em;">
+          <li><span class="hl-red">自调用绕过代理</span> — this.saveOrder()不走代理，@Transactional无效</li>
+          <li><span class="hl-red">REQUIRES_NEW死锁</span> — 10并发各占1连接，再请求第2连接→耗尽→死锁</li>
+          <li>审计失败影响主流程</li>
+          <li>order.getItems()可能为null</li>
+        </ul>
+      </div>
+      <div class="quote-block" style="font-size: 0.72em;">
+        REQUIRES_NEW死锁特征：<strong>无异常、无日志、应用冻结</strong>——最难排查的死锁类型
+      </div>
+    </div>
+    <div>
+      <p class="small"><span class="hl-green">✅ 修复方案</span></p>
+      <pre><code class="language-java">@Service
+public class PaymentOrderService {
+
+    @Autowired private OrderRepository orderRepository;
+    @Autowired private ApplicationEventPublisher eventPublisher;
+
+    @Transactional(rollbackFor = Exception.class)
+    public void createPaymentOrder(
+            PaymentOrder order) {
+        // 1. 风控（事务内尽量快）
+        riskCheckService.validate(order);
+        // 2. 保存订单（已在代理方法内）
+        orderRepository.save(order);
+        if (order.getItems() != null) {
+            order.getItems().forEach(item -&gt;
+                item.setOrderId(order.getId()));
+        }
+        // 3. 发布事件，而非直接调用审计
+        eventPublisher.publishEvent(
+            new OrderCreatedEvent(order.getId()));
+    }
+}
+
+// 事务提交后执行，不占主事务连接
+@TransactionalEventListener(
+    phase = TransactionPhase.AFTER_COMMIT)
+@Transactional(propagation = 
+    Propagation.REQUIRES_NEW)
+public void handleOrderCreated(
+    OrderCreatedEvent event) {
+    auditRepository.save(
+        new AuditLog("Order created: " 
+            + event.getOrderId()));
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 8: Sample C - Bad Code ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本C：private+readOnly双重陷阱</h2>
+  <p class="medium">银行产品服务 — 类级readOnly=true + private方法@Transactional → 双重静默失败</p>
+  <pre><code class="language-java">@Service
+@Transactional(readOnly = true)
+public class ProductRateService {
+
+    @Autowired private ProductRepository productRepository;
+
+    // 更新产品利率——需要写入！
+    @Transactional  // ← 想覆盖readOnly，但...
+    private void updateRate(Long productId, BigDecimal newRate) {  // ← private!
+        Product p = productRepository.findById(productId).orElseThrow();
+        p.setRate(newRate);
+        // Hibernate不会flush — readOnly=true生效，且private方法代理无法拦截
+        // 双重静默失败！
+    }
+
+    // 批量更新利率
+    public void batchUpdateRates(Map&lt;Long, BigDecimal&gt; rateMap) {
+        rateMap.forEach((productId, newRate) -&gt; {
+            updateRate(productId, newRate);  // ← this.updateRate，双重问题
+        });
+    }
+}</code></pre>
+  <div class="card card-bad" style="margin-top: 0.5em;">
+    <h4>🔴 双重静默失败</h4>
+    <div style="font-size: 0.82em;">
+      <p>① <span class="hl-red">private方法代理不拦截</span> → @Transactional完全无效</p>
+      <p>② <span class="hl-red">readOnly=true禁用dirty checking</span> → 即使事务开启，修改也不flush</p>
+      <p>结果：<strong>不抛异常、不写日志、数据就是丢了</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 9: Sample C - Fix ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本C：修复方案</h2>
+  <pre><code class="language-java">@Service
+@Transactional(readOnly = true)
+public class ProductRateService {
+
+    @Autowired private ProductRepository productRepository;
+    @Autowired private RateChangeLogRepository rateChangeLogRepository;
+
+    // ✅ public + @Transactional 覆盖 readOnly
+    @Transactional(rollbackFor = Exception.class)  // readOnly=false + rollbackFor
+    public void updateRate(Long productId, BigDecimal newRate) {
+        if (newRate.compareTo(BigDecimal.ZERO) &lt; 0) {
+            throw new BusinessException("利率不能为负数");
+        }
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -&gt; new BusinessException("产品不存在"));
+        BigDecimal oldRate = p.getRate();
+        p.setRate(newRate);
+        // dirty checking now active, will flush at commit ✓
+        rateChangeLogRepository.save(
+            new RateChangeLog(productId, oldRate, newRate, LocalDateTime.now()));
+    }
+
+    // ✅ 批量更新包裹在事务内
+    @Transactional(rollbackFor = Exception.class)
+    public void batchUpdateRates(Map&lt;Long, BigDecimal&gt; rateMap) {
+        rateMap.forEach(this::updateRate);  // 通过代理调用，事务传播为REQUIRED
+    }
+
+    public List&lt;Product&gt; listProducts(String category) {
+        return productRepository.findByCategory(category);
+    }
+}</code></pre>
+  <table style="font-size: 0.65em; margin-top: 0.5em;">
+    <thead><tr><th>检查项</th><th>风险</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>private + @Transactional</td><td><span class="tag tag-critical">🔴 Critical</span></td><td>CGLIB无法override private方法，注解完全无效</td></tr>
+      <tr><td>readOnly=true静默丢弃写入</td><td><span class="tag tag-critical">🔴 Critical</span></td><td>无异常无警告，数据丢失</td></tr>
+      <tr><td>批量操作无事务</td><td><span class="tag tag-warning">🟡 Important</span></td><td>部分成功部分失败，数据不一致</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== SLIDE 10: Sample D - Virtual Thread ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本D：Virtual Thread+synchronized陷阱</h2>
+  <p class="medium">Java 22 Virtual Threads — synchronized阻塞载体线程 + 共享Connection + 遍历删除</p>
+  <pre><code class="language-java">@Service
+public class AccountTransferService {
+
+    // AI认为synchronized可以保证线程安全
+    public synchronized TransferResult transfer(
+            Account from, Account to, BigDecimal amount) {
+        from.withdraw(amount);
+        to.deposit(amount);
+        auditLog.record(from.getId(), to.getId(), amount);
+        return TransferResult.success();
+    }
+
+    // AI生成的"线程安全"活跃用户追踪
+    private List&lt;Account&gt; activeAccounts = Collections.synchronizedList(new ArrayList&lt;&gt;());
+
+    public void cleanInactive() {
+        for (Account acc : activeAccounts) {  // ← 遍历
+            if (acc.isInactive()) {
+                activeAccounts.remove(acc);   // ← ConcurrentModificationException!
+            }
+        }
+    }
+
+    // AI生成的懒加载连接池
+    private volatile Connection poolConnection;
+    public Connection getPoolConnection() {
+        if (poolConnection == null) {
+            synchronized (this) {
+                if (poolConnection == null) {
+                    poolConnection = createConnection();  // 多线程共享同一个Connection!
+                }
+            }
+        }
+        return poolConnection;
+    }
+}</code></pre>
+  <p class="small" style="margin-top: 0.3em;">来源：<a href="https://markaicode.com/fix-java-concurrency-bugs-ai-generated/" style="color: var(--accent-blue);">Mark AI Code, "Fix AI-Generated Java v22 Concurrency Bugs", 2025.08</a></p>
+</section>
+
+<!-- ===== SLIDE 11: Sample D - Fix ===== -->
+<section>
+  <h2><span class="tag tag-java">Java</span> 样本D：修复方案</h2>
+  <div class="two-col">
+    <div>
+      <div class="card card-bad" style="margin-bottom: 0.5em;">
+        <h4>🔴 致命问题</h4>
+        <ul style="font-size: 0.82em;">
+          <li><span class="hl-red">synchronized pin载体线程</span> — 所有载体线程被pin住，系统假死</li>
+          <li><span class="hl-red">ConcurrentModificationException</span> — 遍历中删除</li>
+          <li><span class="hl-red">共享单一JDBC Connection</span> — 并发事务交叉</li>
+          <li>double-checked locking反模式</li>
+          <li>转账无数据库事务</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <p class="small"><span class="hl-green">✅ 修复：数据库事务+行锁替代synchronized</span></p>
+      <pre><code class="language-java">@Transactional(rollbackFor = Exception.class)
+public TransferResult transfer(
+        Long fromId, Long toId, BigDecimal amount) {
+    // 按ID排序加锁，防止死锁
+    Long firstId = Math.min(fromId, toId);
+    Long secondId = Math.max(fromId, toId);
+    
+    Account first = accountRepository
+        .findByIdForUpdate(firstId);  // SELECT FOR UPDATE
+    Account second = accountRepository
+        .findByIdForUpdate(secondId);
+    
+    // 异步审计，不占事务时间
+    auditPublisher.publishAsync(
+        new TransferAuditEvent(fromId, toId, amount));
+    return TransferResult.success();
+}
+
+// ✅ ConcurrentHashMap替代synchronizedList
+private final ConcurrentHashMap&lt;Long, Account&gt; 
+    activeAccounts = new ConcurrentHashMap&lt;&gt;();
+
+public void cleanInactive() {
+    activeAccounts.entrySet()
+        .removeIf(e -&gt; e.getValue().isInactive());
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 12: Architecture - Three-Phase Transaction ===== -->
+<section>
+  <h2>🏗️ 三段式事务架构</h2>
+  <div class="two-col">
+    <div>
+      <div class="card card-bad" style="margin-bottom: 0.8em;">
+        <h4>❌ 当前架构：事务边界模糊</h4>
+        <div class="arch-diagram">Controller → Service(事务+远程调用+审计) → Repository
+                ↓
+            资源浪费：事务持有连接期间做网络IO</div>
+      </div>
+      <div class="card card-good">
+        <h4>✅ 应有架构：三段式事务</h4>
+        <div class="arch-diagram">① 校验前置（事务外）
+   ComplianceService.check()  ← 远程调用在此完成
+   
+② DB事务化（事务内）
+   TransactionalService.doTransfer()  ← 纯DB操作
+   
+③ 副作用后置（AFTER_COMMIT）
+   AuditEventHandler.handle()  ← 异步事件驱动</div>
+      </div>
+    </div>
+    <div>
+      <div class="card card-pattern">
+        <h4>📐 关键原则</h4>
+        <ul style="font-size: 0.85em;">
+          <li><strong>事务越短越好</strong> — 事务内只做数据库操作</li>
+          <li><strong>远程调用前置</strong> — 校验通过后再开事务</li>
+          <li><strong>副作用后置</strong> — 审计、通知等用事件异步处理</li>
+          <li><strong>连接池容量规划</strong> — REQUIRES_NEW需额外连接，确保连接池足够大</li>
+        </ul>
+      </div>
+      <div class="quote-block" style="font-size: 0.78em; margin-top: 0.5em;">
+        事务是稀缺资源——持有连接期间做网络IO，等于拿着金库钥匙去隔壁聊天。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 13: Code Quality Assessment ===== -->
+<section>
+  <h2>📊 审美与架构评估</h2>
+  <div class="two-col">
+    <div>
+      <h3>代码可读性</h3>
+      <table>
+        <thead><tr><th>维度</th><th>评价</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>命名</td><td><span class="hl-yellow">🟡</span></td><td>transfer/saveOrder尚可，但缺乏业务语义</td></tr>
+          <tr><td>函数粒度</td><td><span class="hl-red">🔴</span></td><td>transfer混合校验、持久化、远程调用</td></tr>
+          <tr><td>异常处理</td><td><span class="hl-red">🔴</span></td><td>大量静默失败——注解无效、丢弃写入、异常提交</td></tr>
+          <tr><td>防御性编程</td><td><span class="hl-red">🔴</span></td><td>几乎没有输入校验</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>设计模式评估</h3>
+      <div class="card card-bad" style="margin-bottom: 0.5em;">
+        <h4>❌ 设计不足</h4>
+        <ul style="font-size: 0.85em;">
+          <li>事务边界模糊：业务逻辑、远程调用、审计混在同一事务</li>
+          <li>缺少事件驱动：审计、通知等副作用未解耦</li>
+          <li>缺少行级锁查询：findByIdForUpdate等未定义</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 14: New Review Patterns ===== -->
+<section>
+  <h2>🧩 新增审查模式</h2>
+  <div class="pattern-grid">
+    <div class="card card-pattern">
+      <h4>静默失败三连击 <span class="tag tag-critical">⭐⭐⭐⭐⭐</span></h4>
+      <p style="font-size: 0.8em;">自调用 + checked异常 + readOnly陷阱——代码看起来正确、编译通过、测试可能通过、生产中静默出错</p>
+      <ul class="checklist" style="font-size: 0.78em;">
+        <li>☐ @Transactional方法是否为public？</li>
+        <li>☐ 是否有this.xxx()调用@Transactional方法？</li>
+        <li>☐ 是否显式声明rollbackFor=Exception.class？</li>
+      </ul>
+    </div>
+    <div class="card card-pattern">
+      <h4>事务范围膨胀 <span class="tag tag-warning">⭐⭐⭐⭐</span></h4>
+      <p style="font-size: 0.8em;">事务内包含远程调用、复杂计算、审计写入 → 长事务、连接占用、锁等待</p>
+      <ul class="checklist" style="font-size: 0.78em;">
+        <li>☐ 事务内是否有远程调用？</li>
+        <li>☐ 校验可否前置到事务外？</li>
+        <li>☐ 副作用是否用事件解耦？</li>
+      </ul>
+    </div>
+    <div class="card card-pattern" style="grid-column: 1 / -1;">
+      <h4>连接池饥饿死锁 <span class="tag tag-critical">⭐⭐⭐⭐⭐</span></h4>
+      <p style="font-size: 0.8em;">REQUIRES_NEW在并发下需要2倍连接 → 死锁时无异常、无日志、应用冻结</p>
+      <div class="two-col" style="font-size: 0.78em;">
+        <div>
+          <ul class="checklist">
+            <li>☐ REQUIRES_NEW是否用AFTER_COMMIT解耦？</li>
+            <li>☐ 连接池容量 ≥ 并发量 × 1.5？</li>
+          </ul>
+        </div>
+        <div>
+          <ul class="checklist">
+            <li>☐ synchronized + Virtual Thread是否用ReentrantLock替代？</li>
+            <li>☐ 是否用ConcurrentHashMap替代synchronizedList？</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 15: Java Review Checklist ===== -->
+<section>
+  <h2>📋 Java @Transactional 审查Checklist</h2>
+  <table style="font-size: 0.62em;">
+    <thead><tr><th>模式</th><th>陷阱</th><th>审查Checklist</th></tr></thead>
+    <tbody>
+      <tr><td>@Transactional</td><td>self-invocation绕过代理</td><td>☐ 是否有this.xxx()调用@Transactional方法？</td></tr>
+      <tr><td>@Transactional</td><td>checked异常默认提交</td><td>☐ 是否显式声明rollbackFor=Exception.class？</td></tr>
+      <tr><td>@Transactional</td><td>private/final方法无效</td><td>☐ @Transactional方法是否为public？</td></tr>
+      <tr><td>@Transactional</td><td>REQUIRES_NEW连接池耗尽</td><td>☐ REQUIRES_NEW是否用AFTER_COMMIT解耦？</td></tr>
+      <tr><td>@Transactional</td><td>readOnly静默丢弃写入</td><td>☐ 写方法是否显式@Override readOnly？</td></tr>
+      <tr><td>synchronized + VT</td><td>载体线程pinning</td><td>☐ 是否用ReentrantLock替代synchronized？</td></tr>
+      <tr><td>Collections.synchronized*</td><td>遍历操作非原子</td><td>☐ 是否用ConcurrentHashMap？</td></tr>
+      <tr><td>double-checked locking</td><td>模式易错</td><td>☐ 是否用holder pattern或memoize？</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== SLIDE 16: Cheat Sheet ===== -->
+<section>
+  <h2>🎯 @Transactional审查速查</h2>
+  <div class="card card-pattern" style="font-size: 0.85em;">
+    <h4 style="color: var(--accent-yellow);">📌 银行场景版 Cheat Sheet</h4>
+    <div class="arch-diagram" style="font-size: 0.9em;">@Transactional审查速查（银行场景版）：
+
+1. rollbackFor=Exception.class → 必加，不讨论
+2. 事务内只做DB操作 → 远程调用前置或异步
+3. 方法必须是public → private/final注解无效
+4. this.xxx()是陷阱 → 分离Bean或@Lazy自注入
+5. readOnly类上的写方法 → 显式@Transactional覆盖
+6. REQUIRES_NEW → 只在AFTER_COMMIT后使用
+7. 连接池容量 → 并发量 × (1 + REQUIRES_NEW方法数)</div>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6em; margin-top: 0.8em;">
+    <div class="card card-bad" style="text-align: center;">
+      <h4>🔴 静默失败</h4>
+      <p style="font-size: 0.8em;">private + readOnly<br>不报错、不回滚、数据丢了</p>
+    </div>
+    <div class="card card-bad" style="text-align: center;">
+      <h4>🔴 饥饿死锁</h4>
+      <p style="font-size: 0.8em;">REQUIRES_NEW × 并发<br>无异常、无日志、应用冻结</p>
+    </div>
+    <div class="card card-good" style="text-align: center;">
+      <h4>✅ 三段式</h4>
+      <p style="font-size: 0.8em;">校验前置 → DB事务化<br>→ AFTER_COMMIT副作用</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 17: References ===== -->
+<section>
+  <h2>📚 参考来源</h2>
+  <div class="card" style="margin-bottom: 0.5em;">
+    <p style="font-size: 0.82em;"><strong>1.</strong> Dominik Paszek, <em>"Spring Boot @Transactional: 5 Bugs That Are Probably in Your Production Code"</em>, 2026.03</p>
+    <p class="small"><a href="https://tools.30tools.com/blogs/paszekdev/spring-boot-transactional-5-bugs-that-are-probably-in-your-production-code-3h5f" style="color: var(--accent-blue);">tools.30tools.com/.../spring-boot-transactional-5-bugs</a></p>
+  </div>
+  <div class="card" style="margin-bottom: 0.5em;">
+    <p style="font-size: 0.82em;"><strong>2.</strong> Mark AI Code, <em>"How to Fix AI-Generated Java v22 Concurrency Bugs"</em>, 2025.08</p>
+    <p class="small"><a href="https://markaicode.com/fix-java-concurrency-bugs-ai-generated/" style="color: var(--accent-blue);">markaicode.com/fix-java-concurrency-bugs-ai-generated</a></p>
+  </div>
+  <div class="card" style="margin-bottom: 0.5em;">
+    <p style="font-size: 0.82em;"><strong>3.</strong> WxJava PR #3968, <em>微信支付API签名路径前缀误匹配</em>, 2026.04</p>
+    <p class="small"><a href="https://github.com/binarywang/WxJava/pull/3968" style="color: var(--accent-blue);">github.com/binarywang/WxJava/pull/3968</a></p>
+  </div>
+  <div class="card">
+    <p style="font-size: 0.82em;"><strong>4.</strong> CSDN, <em>"Spring/Boot 核心陷阱: 事务、AOP 与 Bean 生命周期的常见问题"</em>, 2026.05</p>
+    <p class="small"><a href="https://blog.csdn.net/weixin_45616905/article/details/147189281" style="color: var(--accent-blue);">blog.csdn.net/.../147189281</a></p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 18: Takeaway ===== -->
+<section data-transition="zoom" style="text-align: center;">
+  <h2 style="border: none; font-size: 1.8em;">🎯 今日收获</h2>
+  <div class="quote-block" style="text-align: center; font-size: 1.1em; font-style: normal; max-width: 800px; margin: 1em auto;">
+    5个Bug共享同一本质——<strong>绕过了代理</strong><br><br>
+    <span class="hl-red">坏设计</span>让事务失效静无声<br>
+    <span class="hl-green">好设计</span>用三段式保证事务生效
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; margin-top: 1.5em; max-width: 900px; margin-left: auto; margin-right: auto;">
+    <div class="card card-bad" style="text-align: left;">
+      <h4>🔴 静默失败三连击</h4>
+      <p style="font-size: 0.82em;">自调用+checked异常+readOnly——代码看起来正确，生产中静默出错，钱无声消失</p>
+    </div>
+    <div class="card card-bad" style="text-align: left;">
+      <h4>🔴 饥饿死锁</h4>
+      <p style="font-size: 0.82em;">REQUIRES_NEW连接池耗尽——无异常、无日志、应用冻结，最难排查的死锁</p>
+    </div>
+    <div class="card card-good" style="text-align: left;">
+      <h4>✅ 三段式事务</h4>
+      <p style="font-size: 0.82em;">校验前置→DB事务化→副作用AFTER_COMMIT——事务是稀缺资源，别拿金库钥匙去聊天</p>
+    </div>
+  </div>
+  <p class="small" style="margin-top: 2em; color: rgba(255,255,255,0.4);">代码审查练习 · 2026-05-08 · Day 3</p>
+</section>
+
+</div><!-- slides -->
+</div><!-- reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/highlight.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    progress: true,
+    controls: true,
+    center: false,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    width: 1920,
+    height: 1080,
+    margin: 0.04,
+    plugins: [ RevealHighlight ],
+    highlight: {
+      beforeHighlight: function(hljs) {
+        hljs.registerLanguage('java', function(hljs) {
+          return {
+            keywords: {
+              keyword: 'abstract assert break case catch class const continue default do else enum extends final finally for if implements import instanceof interface native new package private protected public return static strictfp super switch synchronized this throw throws transient try void volatile while record sealed permits non-async var yield',
+              literal: 'true false null',
+              built_in: 'String Integer Long Boolean Double Float BigDecimal List Map Set ArrayList HashMap HashSet Optional Stream CompletableFuture CompletableFuture ExecutorService Thread Runnable Callable Supplier Consumer Function Predicate'
+            },
+            contains: [
+              hljs.C_LINE_COMMENT_MODE,
+              hljs.C_BLOCK_COMMENT_MODE,
+              hljs.QUOTE_STRING_MODE,
+              hljs.NUMBER_MODE,
+              {
+                className: 'type',
+                begin: '\\b[A-Z][a-zA-Z0-9_]*\\b'
+              },
+              {
+                className: 'annotation',
+                begin: '@[A-Z][a-zA-Z0-9_]*',
+                relevance: 10
+              },
+              {
+                className: 'function',
+                begin: '(public|private|protected|static|final|synchronized|native)\\s+',
+                end: '\\(',
+                excludeEnd: true,
+                keywords: 'public private protected static final synchronized native'
+              }
+            ]
+          };
+        });
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -540,25 +540,23 @@ const days = [
       md: "days/2026-05-07.md",
       html: "days/2026-05-07-presentation.html"
     }
+  },
+  {
+    date: "2026-05-08",
+    dayNumber: 3,
+    samples: [
+      { name: "Spring Boot @Transactional 静默失败", lang: "java" }
+    ],
+    findings: [
+      { text: "checked异常默认提交事务——钱可以无声消失", severity: "red" },
+      { text: "REQUIRES_NEW死锁：HikariCP连接耗尽无异常", severity: "red" },
+      { text: "三段式事务架构：校验前置→DB事务化→副作用AFTER_COMMIT", severity: "green" }
+    ],
+    links: {
+      md: "days/2026-05-08.md",
+      html: "days/2026-05-08-presentation.html"
+    }
   }
-  // ────────────────────────────────────────────────────
-  // 📌 添加新一天的示例（取消注释并修改）：
-  // ,{
-  //   date: "2026-05-08",
-  //   dayNumber: 3,
-  //   samples: [
-  //     { name: "你的审查样本名", lang: "java" }
-  //   ],
-  //   findings: [
-  //     { text: "关键发现1", severity: "red" },
-  //     { text: "关键发现2", severity: "yellow" },
-  //     { text: "好设计亮点", severity: "green" }
-  //   ],
-  //   links: {
-  //     md: "days/2026-05-08.md",
-  //     html: "days/2026-05-08-presentation.html"   // 或 null
-  //   }
-  // }
 ];
 
 // ===== Render home page =====
