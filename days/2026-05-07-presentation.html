@@ -232,12 +232,33 @@
   }
   .score-fill { background: var(--accent-green); border-radius: 4px; height: 100%; }
 
+  /* Desktop: slightly smaller base fonts */
+  .reveal h1 { font-size: 2.0em; }
+  .reveal h2 { font-size: 1.35em; }
+  .reveal h3 { font-size: 1.05em; }
+  .reveal p, .reveal li { font-size: 0.88em; }
+  .reveal pre code { font-size: 0.5em; }
+
   /* Mobile responsive */
   @media (max-width: 768px) {
-    .reveal h1 { font-size: 1.8em !important; }
-    .reveal h2 { font-size: 1.3em !important; }
-    .reveal h3 { font-size: 1.1em !important; }
-    .reveal p, .reveal li { font-size: 0.95em !important; }
+    .reveal .slides {
+      transform: none !important;
+      left: auto !important;
+      top: auto !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .reveal .slides > section {
+      padding: 1.2em 1.5em !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .reveal h1 { font-size: 1.6em !important; }
+    .reveal h2 { font-size: 1.2em !important; }
+    .reveal h3 { font-size: 1.0em !important; }
+    .reveal p, .reveal li { font-size: 0.88em !important; }
     .reveal pre code {
       font-size: 0.72em !important;
       max-height: 350px !important;
@@ -878,9 +899,9 @@ fn transfer_ownership() {
     center: false,
     transition: 'slide',
     transitionSpeed: 'default',
-    width: 1200,
-    height: 700,
-    margin: 0.06,
+    width: 1600,
+    height: 900,
+    margin: 0.04,
     plugins: [ RevealHighlight ],
     highlight: {
       beforeHighlight: function(hljs) {
