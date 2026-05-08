@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代码审查 | 2026-05-07</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/vs2015.min.css">
+<style>
+  :root {
+    --bg-dark: #1e1e2e;
+    --bg-code: #1a1a2e;
+    --bg-card: #2a2a3e;
+    --bg-card-good: #1a2e1a;
+    --bg-card-bad: #2e1a1a;
+    --text-primary: #d4d4d4;
+    --text-secondary: #9cdcfe;
+    --accent-blue: #569cd6;
+    --accent-green: #4ec9b0;
+    --accent-red: #f44747;
+    --accent-yellow: #dcdcaa;
+    --accent-orange: #ce9178;
+    --accent-purple: #c586c0;
+    --border-color: #3e3e5e;
+  }
+
+  .reveal-viewport {
+    background: var(--bg-dark);
+  }
+
+  .reveal {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: var(--text-primary);
+  }
+
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 700;
+  }
+
+  .reveal h1 { font-size: 2.4em; color: var(--accent-blue); }
+  .reveal h2 { font-size: 1.6em; color: var(--accent-green); border-bottom: 2px solid var(--border-color); padding-bottom: 0.3em; }
+  .reveal h3 { font-size: 1.2em; color: var(--accent-yellow); }
+
+  .reveal section { text-align: left; }
+
+  /* Code blocks */
+  .reveal pre {
+    width: 100%;
+    margin: 0.5em 0;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .reveal pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.55em;
+    line-height: 1.5;
+    padding: 1em !important;
+    max-height: 520px;
+    overflow-y: auto;
+    background: var(--bg-code) !important;
+  }
+  .reveal pre code::-webkit-scrollbar { width: 6px; }
+  .reveal pre code::-webkit-scrollbar-track { background: transparent; }
+  .reveal pre code::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+  /* Inline code */
+  .reveal code:not([class*="hljs"]):not(pre code) {
+    background: var(--bg-card);
+    color: var(--accent-orange);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1em 1.2em;
+    margin: 0.5em 0;
+  }
+  .card-good {
+    background: var(--bg-card-good);
+    border-color: #3e6e3e;
+  }
+  .card-bad {
+    background: var(--bg-card-bad);
+    border-color: #6e3e3e;
+  }
+  .card-pattern {
+    background: linear-gradient(135deg, var(--bg-card), #2a2a4e);
+    border-left: 4px solid var(--accent-purple);
+  }
+  .card h4 { margin-top: 0; color: var(--accent-green); }
+  .card-bad h4 { color: var(--accent-red); }
+  .card-pattern h4 { color: var(--accent-purple); }
+
+  /* Two column layout */
+  .two-col {
+    display: flex;
+    gap: 1em;
+  }
+  .two-col > div { flex: 1; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 0.2em 0.6em;
+    border-radius: 4px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-right: 0.4em;
+  }
+  .tag-swift { background: #f05138; color: white; }
+  .tag-go { background: #00add8; color: white; }
+  .tag-rust { background: #dea584; color: #1a1a2e; }
+  .tag-critical { background: var(--accent-red); color: white; }
+  .tag-warning { background: #b5860d; color: white; }
+  .tag-good { background: #2ea043; color: white; }
+
+  /* Comparison table */
+  .reveal table {
+    font-size: 0.7em;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+  }
+  .reveal table th {
+    background: var(--bg-card);
+    color: var(--accent-blue);
+    border-bottom: 2px solid var(--accent-blue);
+    padding: 0.6em 0.8em;
+    font-weight: 600;
+  }
+  .reveal table td {
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5em 0.8em;
+    color: var(--text-primary);
+  }
+  .reveal table tr:hover td { background: rgba(86,156,214,0.08); }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    padding: 0.35em 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.85em;
+  }
+  .checklist li::before { margin-right: 0.5em; }
+
+  /* Highlight markers */
+  .hl-red { color: var(--accent-red); font-weight: 600; }
+  .hl-green { color: var(--accent-green); font-weight: 600; }
+  .hl-yellow { color: var(--accent-yellow); font-weight: 600; }
+  .hl-blue { color: var(--accent-blue); font-weight: 600; }
+  .hl-orange { color: var(--accent-orange); font-weight: 600; }
+  .hl-purple { color: var(--accent-purple); font-weight: 600; }
+
+  /* Diff markers */
+  .diff-del { background: rgba(244,71,71,0.15); border-left: 3px solid var(--accent-red); padding-left: 0.5em; }
+  .diff-add { background: rgba(78,201,176,0.12); border-left: 3px solid var(--accent-green); padding-left: 0.5em; }
+
+  /* Star rating */
+  .stars { color: var(--accent-yellow); letter-spacing: 2px; }
+
+  /* Progress bar override */
+  .reveal .progress { color: var(--accent-blue); height: 4px; }
+
+  /* Slide number */
+  .reveal .slide-number { color: var(--text-secondary); background: rgba(30,30,46,0.7); font-size: 0.6em; }
+
+  /* Cover page styling */
+  .cover-subtitle { color: var(--text-secondary); font-size: 1.1em; margin-top: 0.5em; }
+  .cover-tags { margin-top: 1.5em; display: flex; gap: 0.8em; justify-content: center; flex-wrap: wrap; }
+  .cover-tag {
+    padding: 0.4em 1em;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  /* Fragment overrides */
+  .reveal .fragment { opacity: 0.3; transition: all 0.3s ease; }
+  .reveal .fragment.visible { opacity: 1; }
+
+  /* Small text */
+  .small { font-size: 0.75em; color: var(--text-secondary); }
+  .medium { font-size: 0.85em; }
+
+  /* Quote block */
+  .quote-block {
+    border-left: 4px solid var(--accent-purple);
+    padding: 0.8em 1.2em;
+    background: rgba(197,134,192,0.08);
+    border-radius: 0 8px 8px 0;
+    margin: 0.8em 0;
+    font-style: italic;
+    color: var(--text-primary);
+  }
+
+  /* Footer */
+  .slide-footer {
+    position: absolute;
+    bottom: 1em;
+    left: 1em;
+    font-size: 0.5em;
+    color: rgba(255,255,255,0.25);
+  }
+
+  /* Flex grid for pattern cards */
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8em;
+  }
+
+  /* Score bar */
+  .score-bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border-color);
+    margin-right: 0.5em;
+  }
+  .score-fill { background: var(--accent-green); border-radius: 4px; height: 100%; }
+
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .reveal h1 { font-size: 1.8em !important; }
+    .reveal h2 { font-size: 1.3em !important; }
+    .reveal h3 { font-size: 1.1em !important; }
+    .reveal p, .reveal li { font-size: 0.95em !important; }
+    .reveal pre code {
+      font-size: 0.72em !important;
+      max-height: 350px !important;
+      padding: 0.8em !important;
+    }
+    .reveal table { font-size: 0.82em !important; }
+    .card { padding: 0.8em !important; }
+    .two-col { flex-direction: column !important; }
+    .pattern-grid { grid-template-columns: 1fr !important; }
+    .tag { font-size: 0.8em !important; }
+    .small { font-size: 0.85em !important; }
+    .medium { font-size: 0.95em !important; }
+    .checklist li { font-size: 0.9em !important; }
+    .cover-subtitle { font-size: 1em !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="reveal">
+<div class="slides">
+
+<!-- ===== SLIDE 1: Cover ===== -->
+<section data-transition="zoom" style="text-align: center;">
+  <h1 style="font-size: 2.8em; border: none; color: var(--accent-blue);">🔍 今日代码审查</h1>
+  <p class="cover-subtitle">异步生命周期管理 — 谁来负责资源的开始和结束？</p>
+  <p style="color: var(--text-secondary); margin-top: 0.3em; font-size: 0.9em;">2026-05-07</p>
+  <div class="cover-tags" style="margin-top: 2em;">
+    <span class="cover-tag" style="border-color: #f05138; color: #f05138;">Swift</span>
+    <span class="cover-tag" style="border-color: #00add8; color: #00add8;">Go</span>
+    <span class="cover-tag" style="border-color: #dea584; color: #dea584;">Rust</span>
+  </div>
+  <p class="small" style="margin-top: 2.5em;">← → 方向键翻页 &nbsp;|&nbsp; 代码块可滚动</p>
+</section>
+
+<!-- ===== SLIDE 2: Overview ===== -->
+<section>
+  <h2>📋 今日审查概览</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1em;">
+    <div>
+      <h3>审查范围</h3>
+      <div class="card">
+        <p><span class="tag tag-swift">Swift</span> <strong>样本A</strong> — Continuation 泄漏</p>
+        <p class="small">async/await 与 delegate 桥接时，失败路径遗漏 resume</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-go">Go</span> <strong>样本B</strong> — 结构化并发</p>
+        <p class="small">errgroup + WithContext 的 Dashboard 聚合设计</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-rust">Rust</span> <strong>样本C</strong> — 所有权循环</p>
+        <p class="small">Rc 循环引用泄漏与 Weak 打破循环</p>
+      </div>
+    </div>
+    <div>
+      <h3>关键发现</h3>
+      <div class="card card-bad">
+        <h4>🔴 Continuation 泄漏</h4>
+        <p class="small">Swift: 失败路径未 resume → 永久挂起</p>
+      </div>
+      <div class="card card-good">
+        <h4>✅ 结构化并发典范</h4>
+        <p class="small">Go: errgroup 管理生命周期边界</p>
+      </div>
+      <div class="card card-bad">
+        <h4>🔴 Rc 循环引用</h4>
+        <p class="small">Rust: 引用计数永不为零 → 内存泄漏</p>
+      </div>
+      <div class="quote-block" style="font-size: 0.8em;">
+        核心线索：<strong>谁来保证资源的结束？</strong><br>好设计让结束和开始一样明确；坏设计让结束成为希望而非保证。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 3: Sample A - Bad Code ===== -->
+<section>
+  <h2><span class="tag tag-swift">Swift</span> 样本A：Continuation 泄漏</h2>
+  <p class="medium">问题代码 — 只在成功路径 resume，失败路径遗漏</p>
+  <pre><code class="language-swift">func fetchDataAsync(from url: URL) async throws -&gt; Data {
+    try await withCheckedThrowingContinuation { continuation in
+        let manager = NetworkManager()
+        manager.delegate = self
+        manager.fetchData(from: url)
+        
+        // 成功路径 — 有 resume
+        func didReceiveData(_ data: Data) {
+            continuation.resume(returning: data)
+        }
+        // ❌ 失败路径 — 忘记 resume！
+        func didFailWithError(_ error: Error) {
+            // continuation 从未被 resume → 泄漏
+        }
+    }
+}</code></pre>
+  <div class="card card-bad" style="margin-top: 0.5em;">
+    <h4>🔴 四层审查发现</h4>
+    <div class="two-col" style="font-size: 0.78em;">
+      <div>
+        <p><span class="hl-red">❌ 失败路径遗漏</span> — didFailWithError 不 resume</p>
+        <p><span class="hl-red">❌ 任务取消</span> — 父 Task cancel 时无人 resume</p>
+      </div>
+      <div>
+        <p><span class="hl-red">❌ 超时</span> — 回调永不触发则永久泄漏</p>
+        <p><span class="hl-red">❌ 保留环</span> — self→manager→delegate=self</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 4: Sample A - Fix ===== -->
+<section>
+  <h2><span class="tag tag-swift">Swift</span> 样本A：修复方案</h2>
+  <div class="two-col">
+    <div>
+      <p class="small"><span class="hl-red">✅ 所有路径都 resume continuation</span></p>
+      <pre><code class="language-swift">// ✅ 所有路径都 resume
+func fetchDataAsync(from url: URL) async throws -&gt; Data {
+    try await withCheckedThrowingContinuation { continuation in
+        let manager = NetworkManager()
+        manager.delegate = self  // weak!
+        manager.fetchData(from: url)
+        
+        func didReceiveData(_ data: Data) {
+            continuation.resume(returning: data)
+        }
+        func didFailWithError(_ error: Error) {
+            continuation.resume(throwing: error) // ✅
+        }
+    }
+}
+
+// ✅ delegate 用 weak
+protocol NetworkManagerDelegate: AnyObject {
+    func didReceiveData(_ data: Data)
+    func didFailWithError(_ error: Error)
+}
+class NetworkManager {
+    weak var delegate: NetworkManagerDelegate?  // ✅
+}</code></pre>
+    </div>
+    <div>
+      <p class="small"><span class="hl-green">✅✅ 更优：带超时保护</span></p>
+      <pre><code class="language-swift">func fetchWithTimeout(
+    from url: URL, 
+    timeout: TimeInterval = 30
+) async throws -&gt; Data {
+    try await withThrowingTaskGroup(of: Data.self) { group in
+        group.addTask {
+            let (data, _) = try await 
+                URLSession.shared.data(from: url)
+            return data
+        }
+        group.addTask {
+            try await Task.sleep(
+                nanoseconds: UInt64(timeout * 1_000_000_000)
+            )
+            throw URLError(.timedOut)
+        }
+        let result = try await group.next()!
+        group.cancelAll()  // 取消另一个
+        return result
+    }
+}</code></pre>
+    </div>
+  </div>
+  <div class="quote-block" style="font-size: 0.78em; margin-top: 0.3em;">
+    continuation 的契约是<strong>恰好 resume 一次</strong>——编译器信任你，但你的代码必须在所有路径上遵守契约。
+  </div>
+</section>
+
+<!-- ===== SLIDE 5: Sample A - Architecture Evaluation ===== -->
+<section>
+  <h2><span class="tag tag-swift">Swift</span> 样本A：架构评估</h2>
+  <table>
+    <thead><tr><th>维度</th><th>评分</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>可读性</td><td><span class="stars">⭐⭐⭐</span></td><td>continuation 桥接本身不直观，需要注释</td></tr>
+      <tr><td>设计模式</td><td><span class="stars">⭐⭐⭐⭐</span></td><td>withCheckedThrowingContinuation 是官方推荐桥接方式</td></tr>
+      <tr><td>架构</td><td><span class="stars">⭐⭐</span></td><td>delegate + async 混用是架构债务，应逐步迁移</td></tr>
+      <tr><td>扩展性</td><td><span class="stars">⭐⭐</span></td><td>每个桥接点都需手动保证所有路径 resume</td></tr>
+    </tbody>
+  </table>
+  <div class="card" style="margin-top: 1em;">
+    <h4>🤖 AI 最可能隐瞒的3个弱点</h4>
+    <div style="font-size: 0.85em;">
+      <p>1. <span class="hl-red">失败路径遗漏</span> — AI 往往只写 happy path</p>
+      <p>2. <span class="hl-red">Task 取消处理缺失</span> — AI 不了解 Swift Concurrency 取消语义</p>
+      <p>3. <span class="hl-red">保留环隐蔽</span> — delegate 强引用是经典陷阱</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 6: Sample B - Go errgroup ===== -->
+<section>
+  <h2><span class="tag tag-go">Go</span> 样本B：结构化并发典范</h2>
+  <p class="medium">errgroup + WithContext 实现 Dashboard 数据聚合</p>
+  <pre><code class="language-go">func fetchDashboard(ctx context.Context, userID string) (*Dashboard, error) {
+    g, gctx := errgroup.WithContext(ctx)
+
+    var (
+        profile       *Profile
+        orders        []*Order
+        notifications []*Notification
+    )
+
+    g.Go(func() error {
+        var err error
+        profile, err = getProfile(gctx, userID)  // ✅ 使用 gctx 而非 ctx
+        return err
+    })
+    g.Go(func() error {
+        var err error
+        orders, err = getOrders(gctx, userID)
+        return err
+    })
+    g.Go(func() error {
+        var err error
+        notifications, err = getNotifications(gctx, userID)
+        return err
+    })
+
+    if err := g.Wait(); err != nil {
+        return nil, fmt.Errorf("fetch dashboard for %s: %w", userID, err)
+    }
+    return &amp;Dashboard{Profile: profile, Orders: orders, Notifications: notifications}, nil
+}</code></pre>
+</section>
+
+<!-- ===== SLIDE 7: Sample B - Analysis + Advanced ===== -->
+<section>
+  <h2><span class="tag tag-go">Go</span> 样本B：审查分析与进阶</h2>
+  <div class="two-col">
+    <div>
+      <div class="card card-good">
+        <h4>✅ 亮点</h4>
+        <div style="font-size: 0.82em;">
+          <p>✅ 错误传播：任一 error → gctx 取消 → 其他退出</p>
+          <p>✅ 并发安全：各 goroutine 写不同变量</p>
+          <p>✅ context 取消：使用 gctx 传播信号</p>
+          <p>⚠️ 限制缺失：无并发上限可能资源耗尽</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 0.5em;">
+        <h4>🤖 AI 隐瞒弱点</h4>
+        <div style="font-size: 0.82em;">
+          <p>1. 忘记用 <code>gctx</code> 而用 <code>ctx</code></p>
+          <p>2. 不包装 error，丢失上下文</p>
+          <p>3. 无限并发，打爆下游</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="small"><span class="hl-green">带并发限制的进阶版</span></p>
+      <pre><code class="language-go">func enrichProducts(ctx context.Context, 
+    products []Product) ([]EnrichedProduct, error) {
+    results := make([]EnrichedProduct, len(products))
+    g, gctx := errgroup.WithContext(ctx)
+    g.SetLimit(20)  // 最多 20 个并发
+
+    for i, p := range products {
+        i, p := i, p  // Go &lt; 1.22 捕获循环变量
+        g.Go(func() error {
+            enriched, err := enrichProduct(gctx, p)
+            if err != nil {
+                return fmt.Errorf(
+                    "enrich product %s: %w", p.ID, err)
+            }
+            results[i] = enriched  // ✅ 安全
+            return nil
+        })
+    }
+    if err := g.Wait(); err != nil {
+        return nil, err
+    }
+    return results, nil
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 8: Sample C - Rust Rc Cycle ===== -->
+<section>
+  <h2><span class="tag tag-rust">Rust</span> 样本C：Rc 循环引用泄漏</h2>
+  <div class="two-col">
+    <div>
+      <p class="small"><span class="hl-red">❌ 循环引用：a → b → a，引用计数永不为零</span></p>
+      <pre><code class="language-rust">use std::rc::Rc;
+use std::cell::RefCell;
+
+#[derive(Debug)]
+enum List {
+    Cons(i32, RefCell&lt;Rc&lt;List&gt;&gt;),
+    Nil,
+}
+
+fn main() {
+    let a = Rc::new(Cons(5, 
+        RefCell::new(Rc::new(Nil))));
+    // a rc = 1
+
+    let b = Rc::new(Cons(10, 
+        RefCell::new(Rc::clone(&amp;a))));
+    // a rc = 2
+
+    // ❌ 创建循环引用：a → b → a
+    if let Some(link) = a.tail() {
+        *link.borrow_mut() = Rc::clone(&amp;b);
+    }
+    // a 和 b 的引用计数永远不为 0
+    // → 内存泄漏！
+}</code></pre>
+    </div>
+    <div>
+      <p class="small"><span class="hl-green">✅ 用 Weak 打破循环</span></p>
+      <pre><code class="language-rust">use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+
+struct Node {
+    value: i32,
+    parent: RefCell&lt;Weak&lt;Node&gt;&gt;,    // ✅ Weak
+    children: RefCell&lt;Vec&lt;Rc&lt;Node&gt;&gt;&gt;, // ✅ Strong
+}
+
+fn main() {
+    let leaf = Rc::new(Node {
+        value: 3,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
+    });
+    let branch = Rc::new(Node {
+        value: 5,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![Rc::clone(&amp;leaf)]),
+    });
+    *leaf.parent.borrow_mut() = 
+        Rc::downgrade(&amp;branch); // ✅ 不增引用计数
+    
+    // branch strong = 1, leaf strong = 2
+    // branch 离开作用域时正常释放
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 9: Sample C - Rust Analysis ===== -->
+<section>
+  <h2><span class="tag tag-rust">Rust</span> 样本C：架构评估 + RAII</h2>
+  <div class="two-col">
+    <div>
+      <table>
+        <thead><tr><th>维度</th><th>评分</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>可读性</td><td><span class="stars">⭐⭐⭐</span></td><td>Weak/Strong 区分需经验</td></tr>
+          <tr><td>设计模式</td><td><span class="stars">⭐⭐⭐⭐⭐</span></td><td>Weak = 观察者模式在所有权中的优雅实现</td></tr>
+          <tr><td>架构</td><td><span class="stars">⭐⭐⭐⭐</span></td><td>所有权树 + Weak 回指 = 经典 DAG</td></tr>
+          <tr><td>扩展性</td><td><span class="stars">⭐⭐⭐</span></td><td>多线程需 Arc + Mutex</td></tr>
+        </tbody>
+      </table>
+      <div class="card" style="margin-top: 0.5em;">
+        <h4>🤖 AI 隐瞒弱点</h4>
+        <div style="font-size: 0.82em;">
+          <p>1. 默认用 Rc 不想循环问题</p>
+          <p>2. Debug trait 无限递归栈溢出</p>
+          <p>3. borrow + borrow_mut 运行时 panic</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="small"><span class="hl-green">RAII：确保资源释放</span></p>
+      <pre><code class="language-rust">// ✅ 用 RAII 包装 FFI 资源
+struct CBuffer {
+    data: *mut u8,
+    len: usize,
+}
+impl CBuffer {
+    fn new(len: usize) -&gt; Self {
+        let data = unsafe { 
+            libc::malloc(len) as *mut u8 
+        };
+        assert!(!data.is_null(), "Allocation failed");
+        CBuffer { data, len }
+    }
+}
+impl Drop for CBuffer {
+    fn drop(&amp;mut self) {
+        unsafe { 
+            libc::free(self.data as *mut libc::c_void) 
+        };
+    }
+}
+
+// ✅ ManuallyDrop 替代 mem::forget
+fn transfer_ownership() {
+    let v = vec![65, 122];
+    let mut v = ManuallyDrop::new(v);
+    let (ptr, len, cap) = 
+        (v.as_mut_ptr(), v.len(), v.capacity());
+    let s = unsafe { 
+        String::from_raw_parts(ptr, len, cap) 
+    };
+    // s 离开作用域时正常释放
+}</code></pre>
+    </div>
+  </div>
+  <div class="quote-block" style="font-size: 0.78em;">
+    弱引用不是妥协，而是对"非必须存活"关系的精确建模。
+  </div>
+</section>
+
+<!-- ===== SLIDE 10: Core Insight ===== -->
+<section>
+  <h2>💡 核心洞察：异步生命周期</h2>
+  <div class="two-col">
+    <div>
+      <div class="card card-bad" style="margin-bottom: 0.8em;">
+        <h4>❌ 坏代码的共同特征</h4>
+        <ul style="font-size: 0.85em;">
+          <li>只有 happy path，忘记 error/cancel/timeout</li>
+          <li>资源的开始有明确代码，结束靠"希望"</li>
+          <li>保留环 / 循环引用无人打破</li>
+          <li>局部变量可能在异步操作完成前被释放</li>
+        </ul>
+      </div>
+      <div class="card card-good">
+        <h4>✅ 好代码的共同特征</h4>
+        <ul style="font-size: 0.85em;">
+          <li>所有路径都保证资源释放</li>
+          <li>结构化并发：任务有明确生命周期边界</li>
+          <li>弱引用建模"非必须存活"关系</li>
+          <li>取消信号能级联传播</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <table style="font-size: 0.72em;">
+        <thead><tr><th>语言</th><th>机制</th><th>资源开始</th><th>资源结束</th><th>失败路径</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tag tag-swift">Swift</span></td>
+            <td>continuation</td>
+            <td>withCheckedContinuation</td>
+            <td>resume (恰好一次)</td>
+            <td>所有路径必须 resume</td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-go">Go</span></td>
+            <td>errgroup</td>
+            <td>g.Go(func)</td>
+            <td>g.Wait()</td>
+            <td>ctx 取消 + error 返回</td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-rust">Rust</span></td>
+            <td>ownership</td>
+            <td>Rc::new() / Arc::new()</td>
+            <td>引用计数归零时 Drop</td>
+            <td>Weak::upgrade() 返回 None</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="quote-block" style="font-size: 0.78em; margin-top: 0.8em;">
+        <strong>好设计让结束和开始一样明确；坏设计让结束成为希望而非保证。</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 11: New Review Patterns ===== -->
+<section>
+  <h2>🧩 新增审查模式</h2>
+  <div class="pattern-grid">
+    <div class="card card-pattern">
+      <h4>异步桥接遗漏路径 <span class="tag tag-critical">⭐⭐⭐⭐⭐</span></h4>
+      <p style="font-size: 0.8em;">将 callback/delegate 桥接到 async/await 时，只有 happy path 的 resume，缺少 error/cancel/timeout 路径</p>
+      <ul class="checklist" style="font-size: 0.78em;">
+        <li>☐ continuation 在所有路径上恰好 resume 一次？</li>
+        <li>☐ 处理了 Task 取消？</li>
+        <li>☐ 有超时保护？</li>
+        <li>☐ delegate 无保留环？</li>
+      </ul>
+    </div>
+    <div class="card card-pattern">
+      <h4>结构化并发模式 <span class="tag tag-good">✅</span></h4>
+      <p style="font-size: 0.8em;">使用 errgroup / TaskGroup / JoinSet 管理并发任务，任务有明确边界，错误能传播、取消能级联</p>
+      <ul class="checklist" style="font-size: 0.78em;">
+        <li>☐ 用 WithContext / gctx 传播取消？</li>
+        <li>☐ 并发有限制（SetLimit / semaphore）？</li>
+        <li>☐ error 包含足够上下文？</li>
+        <li>☐ 共享变量写入安全？</li>
+      </ul>
+    </div>
+    <div class="card card-pattern" style="grid-column: 1 / -1;">
+      <h4>所有权循环陷阱 <span class="tag tag-warning">⭐⭐⭐⭐</span></h4>
+      <p style="font-size: 0.8em;">使用 Rc/Arc 构建图/树结构时，节点间双向引用缺少 Weak 打破循环</p>
+      <div class="two-col" style="font-size: 0.78em;">
+        <div>
+          <ul class="checklist">
+            <li>☐ 是否存在循环引用可能？</li>
+            <li>☐ 父→子 Strong，子→父 Weak？</li>
+          </ul>
+        </div>
+        <div>
+          <ul class="checklist">
+            <li>☐ Debug/Display 会导致无限递归？</li>
+            <li>☐ RefCell/Mutex borrow 会 panic/deadlock？</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 12: Cross-Language Wisdom ===== -->
+<section>
+  <h2>🌐 跨语言设计智慧映射</h2>
+  <table style="font-size: 0.68em;">
+    <thead>
+      <tr><th>概念</th><th><span class="tag tag-swift">Swift</span></th><th><span class="tag tag-go">Go</span></th><th><span class="tag tag-rust">Rust</span></th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>弱引用</strong></td>
+        <td><code>weak var delegate</code></td>
+        <td>N/A (GC 处理)</td>
+        <td><code>Weak&lt;T&gt;</code> / <code>Arc::downgrade</code></td>
+      </tr>
+      <tr>
+        <td><strong>取消传播</strong></td>
+        <td><code>Task.cancel()</code> + <code>withTaskCancellationHandler</code></td>
+        <td><code>context.Context</code></td>
+        <td><code>CancellationToken</code></td>
+      </tr>
+      <tr>
+        <td><strong>资源释放保证</strong></td>
+        <td><code>defer</code> / <code>deinit</code></td>
+        <td><code>defer</code></td>
+        <td><code>Drop</code> trait (RAII)</td>
+      </tr>
+      <tr>
+        <td><strong>结构化并发</strong></td>
+        <td><code>TaskGroup</code></td>
+        <td><code>errgroup.WithContext</code></td>
+        <td><code>JoinSet</code></td>
+      </tr>
+      <tr>
+        <td><strong>错误聚合</strong></td>
+        <td>只抛第一个</td>
+        <td>只返回第一个 error</td>
+        <td><code>JoinError</code> 含多个</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6em; margin-top: 0.8em;">
+    <div class="card" style="font-size: 0.75em;">
+      <h4 style="color: var(--accent-blue);">结构化并发趋势</h4>
+      <p>Swift TaskGroup → 子任务随 group 生命周期<br>Go errgroup → goroutine 随 Wait 结束<br>Rust JoinSet → 任务可被集体 abort</p>
+    </div>
+    <div class="card" style="font-size: 0.75em;">
+      <h4 style="color: var(--accent-purple);">弱引用的普遍性</h4>
+      <p>"持有引用" ≠ "持有所有权"<br>Swift weak / Rust Weak / Java WeakReference<br>Go 无需（GC 处理循环引用）</p>
+    </div>
+    <div class="card" style="font-size: 0.75em;">
+      <h4 style="color: var(--accent-yellow);">"恰好一次"挑战</h4>
+      <p>Swift continuation: 恰好 resume 一次<br>Go channel: 恰好 close 一次<br>Rust Drop: 恰好执行一次</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 13: Review Checklist ===== -->
+<section>
+  <h2>✅ 自审纲领回顾</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6em;">
+    <div class="card">
+      <h4 style="color: var(--accent-blue);">📋 原有纲领</h4>
+      <ol style="font-size: 0.82em; padding-left: 1.2em;">
+        <li>数据流追踪：每个值的来源和去向</li>
+        <li>边界条件验证：空值、极值、并发</li>
+        <li>必要性审查：每行代码是否必要</li>
+        <li>反向审：AI 最可能隐瞒什么</li>
+        <li>性能热点：循环内重复计算</li>
+      </ol>
+    </div>
+    <div class="card card-pattern">
+      <h4 style="color: var(--accent-purple);">🆕 今日新增 Checklist</h4>
+      <ul style="font-size: 0.82em; list-style: none; padding: 0;">
+        <li>🟦 <strong>异步桥接</strong></li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ continuation 所有路径都 resume？</li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ Task 取消处理？超时保护？</li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ delegate 是否 weak？</li>
+        <li style="margin-top: 0.3em;">🟦 <strong>结构化并发</strong></li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ WithContext 传播取消？并发有限制？</li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ error 有上下文包装？共享写入安全？</li>
+        <li style="margin-top: 0.3em;">🟦 <strong>所有权循环</strong></li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ 双向引用用 Weak？Debug trait 安全？</li>
+        <li style="padding-left: 1.5em; font-size: 0.9em;">☐ RefCell borrow 会冲突？</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 14: Today's Takeaway ===== -->
+<section data-transition="zoom" style="text-align: center;">
+  <h2 style="border: none; font-size: 1.8em;">🎯 今日收获</h2>
+  <div class="quote-block" style="text-align: center; font-size: 1.1em; font-style: normal; max-width: 800px; margin: 1em auto;">
+    异步代码的核心问题是<strong>"谁来保证结束"</strong><br><br>
+    <span class="hl-red">坏设计</span>让结束成为希望而非保证<br>
+    <span class="hl-green">好设计</span>让结束和开始一样明确
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; margin-top: 1.5em; max-width: 900px; margin-left: auto; margin-right: auto;">
+    <div class="card card-bad" style="text-align: left;">
+      <h4>🔴 Swift 教训</h4>
+      <p style="font-size: 0.82em;">continuation 必须在所有路径上恰好 resume 一次——这是运行时不变量</p>
+    </div>
+    <div class="card card-good" style="text-align: left;">
+      <h4>✅ Go 典范</h4>
+      <p style="font-size: 0.82em;">errgroup 结构化并发：所有子任务的生命周期被 group 管理，取消可级联</p>
+    </div>
+    <div class="card" style="text-align: left; border-left: 4px solid var(--accent-orange);">
+      <h4 style="color: var(--accent-orange);">🦀 Rust 智慧</h4>
+      <p style="font-size: 0.82em;">Weak 不是妥协，是对"非必须存活"关系的精确建模</p>
+    </div>
+  </div>
+  <p class="small" style="margin-top: 2em; color: rgba(255,255,255,0.4);">代码审查练习 · 2026-05-07</p>
+</section>
+
+</div><!-- slides -->
+</div><!-- reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/highlight.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    progress: true,
+    controls: true,
+    center: false,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    width: 1200,
+    height: 700,
+    margin: 0.06,
+    plugins: [ RevealHighlight ],
+    highlight: {
+      beforeHighlight: function(hljs) {
+        hljs.registerLanguage('swift', function(hljs) {
+          return {
+            keywords: {
+              keyword: 'func class struct protocol enum extension import init deinit var let where typealias associatedtype public private internal fileprivate open override static mutating subscript convenience required lazy weak unowned inout guard if else switch case default for in while repeat break continue return throw try catch do as is self super nil true false associatedtype Type Self Any AnyObject',
+              literal: 'true false nil',
+              built_in: 'Int String Double Float Bool Array Dictionary Set Optional Result URL Data Error URLSession Task Continuation UnsafeMutablePointer'
+            },
+            contains: [
+              hljs.C_LINE_COMMENT_MODE,
+              hljs.C_BLOCK_COMMENT_MODE,
+              hljs.QUOTE_STRING_MODE,
+              hljs.NUMBER_MODE,
+              {
+                className: 'type',
+                begin: '\\b[A-Z][a-zA-Z0-9_]*\\b'
+              },
+              {
+                className: 'function',
+                begin: 'func\\s+',
+                end: '\\(',
+                excludeEnd: true,
+                keywords: 'func'
+              }
+            ]
+          };
+        });
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

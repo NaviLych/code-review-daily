@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Review Daily | 每日代码审查练习</title>
+  <style>
+    :root {
+      --bg-primary: #1e1e2e;
+      --bg-secondary: #181825;
+      --bg-card: #252540;
+      --bg-card-hover: #2a2a4a;
+      --border: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #6c7086;
+      --accent-blue: #89b4fa;
+      --accent-green: #a6e3a1;
+      --accent-red: #f38ba8;
+      --accent-yellow: #f9e2af;
+      --accent-purple: #cba6f7;
+      --accent-peach: #fab387;
+      --accent-teal: #94e2d5;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'JetBrains Mono', 'Fira Code', monospace, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .hero {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p { color: var(--text-secondary); margin-top: 0.5rem; font-size: 1.05rem; }
+    .hero .emoji-row { margin-top: 1rem; font-size: 1.5rem; letter-spacing: 0.5rem; }
+    .stats-bar { display: flex; justify-content: center; gap: 1.5rem; padding: 2rem 1.5rem; flex-wrap: wrap; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.2rem 2rem; text-align: center; min-width: 140px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
+    .stat-number { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .stat-number.blue { color: var(--accent-blue); }
+    .stat-number.green { color: var(--accent-green); }
+    .stat-number.purple { color: var(--accent-purple); }
+    .stat-label { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem; }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+    .section-title {
+      font-size: 1.4rem; font-weight: 700; margin: 2.5rem 0 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-title .icon { font-size: 1.3rem; }
+    .day-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; margin-bottom: 1rem;
+      transition: border-color 0.25s, transform 0.2s;
+    }
+    .day-card:hover { border-color: var(--accent-blue); transform: translateY(-1px); }
+    .day-card .card-header { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .day-badge {
+      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.2rem 0.7rem; font-size: 0.8rem; font-weight: 700;
+      color: var(--accent-peach); font-variant-numeric: tabular-nums;
+    }
+    .lang-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .lang-tag {
+      font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem;
+      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .lang-tag.js     { background: rgba(249,226,175,0.15); color: var(--accent-yellow); }
+    .lang-tag.python { background: rgba(137,180,250,0.15); color: var(--accent-blue); }
+    .lang-tag.swift  { background: rgba(243,139,168,0.15); color: var(--accent-red); }
+    .lang-tag.go     { background: rgba(166,227,161,0.15); color: var(--accent-green); }
+    .lang-tag.rust   { background: rgba(203,166,247,0.15); color: var(--accent-purple); }
+    .lang-tag.java   { background: rgba(250,179,135,0.15); color: var(--accent-peach); }
+    .sample-names { color: var(--text-primary); font-size: 0.95rem; font-weight: 500; margin-bottom: 0.6rem; }
+    .sample-names span { margin-right: 1rem; }
+    .sample-prefix { color: var(--text-muted); font-size: 0.8rem; }
+    .findings { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+    .finding { font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 0.4rem; }
+    .finding .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 0.45rem; flex-shrink: 0; }
+    .finding .dot.red    { background: var(--accent-red); }
+    .finding .dot.yellow { background: var(--accent-yellow); }
+    .finding .dot.green  { background: var(--accent-green); }
+    .card-links { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .card-link {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.82rem;
+      font-weight: 600; text-decoration: none; transition: background 0.2s, transform 0.15s;
+    }
+    .card-link.md {
+      background: rgba(137,180,250,0.12); color: var(--accent-blue);
+      border: 1px solid rgba(137,180,250,0.25);
+    }
+    .card-link.md:hover { background: rgba(137,180,250,0.22); transform: translateY(-1px); }
+    .card-link.html {
+      background: rgba(166,227,161,0.12); color: var(--accent-green);
+      border: 1px solid rgba(166,227,161,0.25);
+    }
+    .card-link.html:hover { background: rgba(166,227,161,0.22); transform: translateY(-1px); }
+    .pattern-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .pattern-cards { grid-template-columns: 1fr; } }
+    .pattern-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; text-decoration: none; transition: border-color 0.25s, transform 0.2s;
+    }
+    .pattern-card:hover { border-color: var(--accent-purple); transform: translateY(-2px); }
+    .pattern-card .pc-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .pattern-card .pc-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+    .pattern-card .pc-desc { font-size: 0.85rem; color: var(--text-muted); }
+    .pattern-card .pc-count {
+      display: inline-block; margin-top: 0.6rem; font-size: 0.75rem;
+      font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;
+    }
+    .pattern-card .pc-count.review { background: rgba(243,139,168,0.12); color: var(--accent-red); }
+    .pattern-card .pc-count.arch   { background: rgba(203,166,247,0.12); color: var(--accent-purple); }
+    footer {
+      text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border);
+      color: var(--text-muted); font-size: 0.8rem;
+    }
+    footer a { color: var(--accent-blue); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.6rem; }
+      .stats-bar { gap: 0.75rem; }
+      .stat-card { min-width: 100px; padding: 0.8rem 1rem; }
+      .stat-number { font-size: 1.5rem; }
+      .day-card { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🔍 Code Review Daily</h1>
+  <p>每日代码审查与架构练习 | Daily Code Review & Architecture Practice</p>
+  <div class="emoji-row">🧠 🔬 🏗️ 🛡️</div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="container">
+  <div class="section-title"><span class="icon">📅</span> 每日审查</div>
+  <div id="dayCards"></div>
+
+  <div class="section-title"><span class="icon">📚</span> 模式库</div>
+  <div class="pattern-cards">
+    <a class="pattern-card" href="patterns/%E5%AE%A1%E6%9F%A5%E6%A8%A1%E5%BC%8F%E5%BA%93.md">
+      <div class="pc-icon">🔎</div>
+      <div class="pc-title">审查模式库</div>
+      <div class="pc-desc">AI 代码常见问题模式，审查时快速识别</div>
+      <span class="pc-count review" id="reviewPatternCount"></span>
+    </a>
+    <a class="pattern-card" href="patterns/%E6%9E%B6%E6%9E%84%E6%A8%A1%E5%BC%8F%E5%BA%93.md">
+      <div class="pc-icon">🏗️</div>
+      <div class="pc-title">架构模式库</div>
+      <div class="pc-desc">好设计与坏设计片段，架构学习与审查参考</div>
+      <span class="pc-count arch" id="archPatternCount"></span>
+    </a>
+  </div>
+</div>
+
+<footer>
+  Built with ❤️ &nbsp;|&nbsp; <a href="https://github.com/NaviLych/code-review-daily">GitHub Repo</a>
+</footer>
+
+<!-- ===================================================================
+     数据层 — 修改以下 JS 数组即可新增条目
+     
+     📌 如何添加新一天的审查记录：
+     1. 在 days 数组末尾追加一个新对象
+     2. 必填字段：date, dayNumber, samples, findings, links
+     3. links.md 和 links.html 填相对路径（从仓库根目录算起）
+     4. 如果当天没有 html 演示文稿，links.html 设为 null
+     5. 页面会自动更新统计数字和卡片列表
+     =================================================================== -->
+<script>
+const REVIEW_PATTERN_COUNT = 16;
+const ARCH_PATTERN_COUNT   = 8;
+
+const days = [
+  {
+    date: "2026-05-06",
+    dayNumber: 1,
+    samples: [
+      { name: "React UserList 性能陷阱", lang: "js" },
+      { name: "Claude Code LiteLLM Fallback Bug", lang: "python" }
+    ],
+    findings: [
+      { text: "每次渲染触发 O(n·logn) 完整计算，缺少 useMemo 缓存", severity: "red" },
+      { text: "LiteLLM drop_params 只删除不支持的参数名，不删除不支持的参数值", severity: "red" },
+      { text: "AI 假设外部库行为未验证，'看起来合理'≠实际行为", severity: "yellow" }
+    ],
+    links: {
+      md: "days/2026-05-06.md",
+      html: null
+    }
+  },
+  {
+    date: "2026-05-07",
+    dayNumber: 2,
+    samples: [
+      { name: "Swift async/await Continuation 泄漏", lang: "swift" },
+      { name: "Go errgroup 结构化并发", lang: "go" },
+      { name: "Rust Rc 循环引用 & Weak", lang: "rust" }
+    ],
+    findings: [
+      { text: "Swift continuation 失败路径遗漏 resume → 永久挂起泄漏", severity: "red" },
+      { text: "Go errgroup 体现结构化并发：所有子任务生命周期被 group 管理", severity: "green" },
+      { text: "Rust Rc 循环引用绕过所有权检查，需 Weak 打破循环", severity: "yellow" }
+    ],
+    links: {
+      md: "days/2026-05-07.md",
+      html: "days/2026-05-07-presentation.html"
+    }
+  }
+  // ────────────────────────────────────────────────────
+  // 📌 添加新一天的示例（取消注释并修改）：
+  // ,{
+  //   date: "2026-05-08",
+  //   dayNumber: 3,
+  //   samples: [
+  //     { name: "你的审查样本名", lang: "java" }
+  //   ],
+  //   findings: [
+  //     { text: "关键发现1", severity: "red" },
+  //     { text: "关键发现2", severity: "yellow" },
+  //     { text: "好设计亮点", severity: "green" }
+  //   ],
+  //   links: {
+  //     md: "days/2026-05-08.md",
+  //     html: "days/2026-05-08-presentation.html"   // 或 null
+  //   }
+  // }
+];
+
+function renderStats() {
+  const totalDays = days.length;
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card"><div class="stat-number blue">${totalDays}</div><div class="stat-label">审查天数</div></div>
+    <div class="stat-card"><div class="stat-number green">${REVIEW_PATTERN_COUNT}</div><div class="stat-label">审查模式</div></div>
+    <div class="stat-card"><div class="stat-number purple">${ARCH_PATTERN_COUNT}</div><div class="stat-label">架构模式</div></div>
+  `;
+  document.getElementById('reviewPatternCount').textContent = REVIEW_PATTERN_COUNT + ' 个模式';
+  document.getElementById('archPatternCount').textContent = ARCH_PATTERN_COUNT + ' 个模式';
+}
+
+function langTag(lang) {
+  const map = {
+    js:     { label: 'JavaScript', cls: 'js' },
+    python: { label: 'Python',     cls: 'python' },
+    swift:  { label: 'Swift',      cls: 'swift' },
+    go:     { label: 'Go',         cls: 'go' },
+    rust:   { label: 'Rust',       cls: 'rust' },
+    java:   { label: 'Java',       cls: 'java' },
+  };
+  const info = map[lang] || { label: lang, cls: '' };
+  return '<span class="lang-tag ' + info.cls + '">' + info.label + '</span>';
+}
+
+function renderDays() {
+  const container = document.getElementById('dayCards');
+  container.innerHTML = days.map(function(d) {
+    var sampleHTML = d.samples.map(function(s) {
+      return '<span><span class="sample-prefix">▸</span> ' + s.name + ' ' + langTag(s.lang) + '</span>';
+    }).join('');
+    var findingHTML = d.findings.map(function(f) {
+      return '<div class="finding"><span class="dot ' + f.severity + '"></span><span>' + f.text + '</span></div>';
+    }).join('');
+    var mdLink = '<a class="card-link md" href="' + d.links.md + '">📝 MD 笔记</a>';
+    var htmlLink = d.links.html ? '<a class="card-link html" href="' + d.links.html + '">🖥️ HTML 演示</a>' : '';
+    return '<div class="day-card">' +
+      '<div class="card-header"><span class="day-badge">Day ' + d.dayNumber + '</span>' +
+      '<span style="color:var(--text-muted);font-size:0.82rem;">' + d.date + '</span></div>' +
+      '<div class="sample-names">' + sampleHTML + '</div>' +
+      '<div class="findings">' + findingHTML + '</div>' +
+      '<div class="card-links">' + mdLink + htmlLink + '</div></div>';
+  }).join('');
+}
+
+renderStats();
+renderDays();
+</script>
+
+</body>
+</html>
