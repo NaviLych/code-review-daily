@@ -617,14 +617,9 @@ renderStats();
 renderDays();
 
 // ===== Marked.js configuration =====
+// marked v15+ no longer supports highlight in setOptions
+// Use marked.use() with markedHighlight extension, or do manual post-processing
 marked.setOptions({
-  highlight: function(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try { return hljs.highlight(code, { language: lang }).value; } catch(e) {}
-    }
-    try { return hljs.highlightAuto(code).value; } catch(e) {}
-    return code;
-  },
   breaks: true,
   gfm: true
 });
