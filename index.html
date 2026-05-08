@@ -661,8 +661,8 @@
       <div id="calDetail"></div>
     </div>
 
-    <div class="section-title"><span class="icon">📋</span> 全部审查记录</div>
-    <div id="dayCards"></div>
+    <div class="section-title" onclick="toggleDayCards()" style="cursor:pointer;user-select:none"><span class="icon">📋</span> 全部审查记录 <span id="toggleIcon" style="font-size:0.7em;color:var(--text-muted)">▶ 展开</span></div>
+    <div id="dayCards" style="display:none"></div>
 
     <div class="section-title"><span class="icon">📚</span> 模式库</div>
     <div class="pattern-cards">
@@ -1156,6 +1156,18 @@ function renderCalendarDetail(dateStr) {
   renderCalendar();
 })();
 
+
+function toggleDayCards() {
+  var el = document.getElementById('dayCards');
+  var icon = document.getElementById('toggleIcon');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    icon.textContent = '▼ 折叠';
+  } else {
+    el.style.display = 'none';
+    icon.textContent = '▶ 展开';
+  }
+}
 </script>
 
 </body>
