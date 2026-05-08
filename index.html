@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Code Review Daily | 每日代码审查练习</title>
   <!-- marked.js for markdown rendering -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <!-- highlight.js for code highlighting (VS Code Dark+ style) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/vs2015.min.css">
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
@@ -756,7 +756,17 @@ function loadAndRenderMD(filePath) {
     })
     .then(function(mdText) {
       console.log('MD loaded, length:', mdText.length);
-      var html = marked.parse(mdText);
+      var html;
+      try {
+        if (typeof marked === 'undefined') {
+          throw new Error('marked.js not loaded');
+        }
+        html = marked.parse(mdText);
+        console.log('Rendered HTML length:', html.length);
+      } catch(e) {
+        mdContent.innerHTML = '<div style="color:#f38ba8;padding:2rem;font-size:1.1rem;">⚠️ marked.parse 错误: ' + e.message + '</div>';
+        return;
+      }
       mdContent.innerHTML = html;
       // Re-highlight code blocks that marked didn't handle
       mdContent.querySelectorAll('pre code').forEach(function(block) {
