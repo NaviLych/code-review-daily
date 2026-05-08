@@ -284,16 +284,24 @@
 
   /* Mobile responsive: disable reveal.js, use scrollable layout */
   @media (max-width: 768px) {
-    body {
+    html, body {
       background: var(--bg-dark) !important;
+      overflow: auto !important;
       overflow-y: auto !important;
+      height: auto !important;
+      min-height: auto !important;
+      position: static !important;
+      touch-action: auto !important;
+      -webkit-overflow-scrolling: touch !important;
     }
     .reveal-viewport {
       position: static !important;
       width: 100% !important;
       height: auto !important;
+      min-height: auto !important;
       overflow: visible !important;
       background: var(--bg-dark) !important;
+      touch-action: auto !important;
     }
     .reveal {
       position: static !important;
