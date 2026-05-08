@@ -282,37 +282,61 @@
     /* reveal.js manages visibility when ready */
   }
 
-  /* Mobile responsive */
+  /* Mobile responsive: disable reveal.js, use scrollable layout */
   @media (max-width: 768px) {
+    body {
+      background: var(--bg-dark) !important;
+      overflow-y: auto !important;
+    }
+    .reveal-viewport {
+      position: static !important;
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible !important;
+      background: var(--bg-dark) !important;
+    }
+    .reveal {
+      position: static !important;
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible !important;
+      font-size: 16px !important;
+    }
     .reveal .slides {
+      position: static !important;
       transform: none !important;
-      width: 100vw !important;
+      width: 100% !important;
       height: auto !important;
       left: auto !important;
       top: auto !important;
+      zoom: 1 !important;
     }
     .reveal .slides section {
-      min-height: 100vh;
-      width: 100vw !important;
+      display: block !important;
+      opacity: 1 !important;
+      visibility: visible !important;
       position: relative !important;
       transform: none !important;
-    }
-    .reveal {
-      width: 100vw !important;
+      min-height: auto !important;
+      width: 100% !important;
+      padding: 1.5em 1em !important;
+      box-sizing: border-box !important;
+      border-bottom: 1px solid var(--border-color) !important;
       height: auto !important;
-      overflow: visible !important;
-      position: relative !important;
     }
-    .reveal-viewport {
-      overflow: visible !important;
-      position: relative !important;
+    /* Hide reveal.js UI controls */
+    .reveal .progress,
+    .reveal .controls,
+    .reveal .slide-number {
+      display: none !important;
     }
-    .reveal h1 { font-size: 1.4em !important; }
-    .reveal h2 { font-size: 1.1em !important; }
-    .reveal h3 { font-size: 1.0em !important; }
-    .reveal p, .reveal li { font-size: 0.95em !important; }
+    /* Typography */
+    .reveal h1 { font-size: 1.6em !important; }
+    .reveal h2 { font-size: 1.2em !important; }
+    .reveal h3 { font-size: 1.05em !important; }
+    .reveal p, .reveal li { font-size: 0.92em !important; }
     .reveal pre code {
-      font-size: 0.72em !important;
+      font-size: 0.75em !important;
       max-height: 350px !important;
       padding: 0.8em !important;
     }
@@ -1003,12 +1027,29 @@ public void cleanInactive() {
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/highlight.js"></script>
 <script>
 (function() {
+  var isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+  // Mobile: skip reveal.js entirely, use scrollable layout with standalone highlight.js
+  if (isMobile) {
+    document.documentElement.classList.add('mobile-scroll');
+    // Load standalone highlight.js for code coloring
+    var hljsScript = document.createElement('script');
+    hljsScript.src = 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js';
+    hljsScript.onload = function() {
+      document.querySelectorAll('pre code').forEach(function(block) {
+        hljs.highlightElement(block);
+      });
+    };
+    document.head.appendChild(hljsScript);
+    return;
+  }
+
+  // Desktop: use reveal.js as slideshow
   // Fallback: if reveal.js scripts failed to load, show content as scrollable page
   if (typeof Reveal === 'undefined' || typeof RevealHighlight === 'undefined') {
     console.error('[presentation] reveal.js or highlight plugin failed to load, falling back to scrollable view');
     var revealEl = document.querySelector('.reveal');
     if (revealEl) revealEl.classList.add('fallback');
-    // Manually highlight code blocks with standalone hljs if available
     if (typeof hljs !== 'undefined') {
       document.querySelectorAll('pre code').forEach(function(block) {
         hljs.highlightElement(block);
@@ -1071,16 +1112,13 @@ public void cleanInactive() {
         }
       }
     }).then(function() {
-      // Mark as ready so CSS fallback rules are disabled
       document.querySelector('.reveal').classList.add('ready');
     }).catch(function(err) {
       console.error('[presentation] Reveal.initialize failed:', err);
-      // Fallback: show content as scrollable page
       document.querySelector('.reveal').classList.add('fallback');
     });
   } catch(e) {
     console.error('[presentation] Initialization error:', e);
-    // Fallback: show content as scrollable page
     var revealEl = document.querySelector('.reveal');
     if (revealEl) revealEl.classList.add('fallback');
   }
