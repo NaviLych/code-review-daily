@@ -232,47 +232,59 @@
   }
   .score-fill { background: var(--accent-green); border-radius: 4px; height: 100%; }
 
-  /* Desktop: slightly smaller base fonts */
-  .reveal h1 { font-size: 2.0em; }
-  .reveal h2 { font-size: 1.35em; }
-  .reveal h3 { font-size: 1.05em; }
-  .reveal p, .reveal li { font-size: 0.88em; }
-  .reveal pre code { font-size: 0.5em; }
+  /* Desktop: compact fonts */
+  .reveal h1 { font-size: 1.7em; }
+  .reveal h2 { font-size: 1.15em; }
+  .reveal h3 { font-size: 0.95em; }
+  .reveal p, .reveal li { font-size: 0.78em; }
+  .reveal pre code { font-size: 0.45em; }
+  .reveal table { font-size: 0.7em; }
+  .card { padding: 0.6em 0.8em; }
+  .checklist li { font-size: 0.78em; }
+  .small { font-size: 0.7em; }
+  .medium { font-size: 0.8em; }
 
-  /* Mobile responsive */
+  /* Mobile responsive - disable reveal scaling, use natural flow */
   @media (max-width: 768px) {
     .reveal .slides {
       transform: none !important;
-      left: auto !important;
-      top: auto !important;
-      width: 100% !important;
-      height: 100% !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100vw !important;
+      height: auto !important;
+      position: relative !important;
     }
     .reveal .slides > section {
-      padding: 1.2em 1.5em !important;
-      width: 100% !important;
+      padding: 1em 1.2em !important;
+      width: 100vw !important;
       height: auto !important;
       min-height: 100vh;
+      max-height: none !important;
       box-sizing: border-box;
+      position: relative !important;
     }
-    .reveal h1 { font-size: 1.6em !important; }
-    .reveal h2 { font-size: 1.2em !important; }
-    .reveal h3 { font-size: 1.0em !important; }
-    .reveal p, .reveal li { font-size: 0.88em !important; }
+    .reveal .slide-number { display: none; }
+    .reveal .progress { display: none; }
+    .reveal .controls { display: none; }
+    .reveal h1 { font-size: 1.5em !important; }
+    .reveal h2 { font-size: 1.15em !important; }
+    .reveal h3 { font-size: 0.95em !important; }
+    .reveal p, .reveal li { font-size: 0.85em !important; }
     .reveal pre code {
-      font-size: 0.72em !important;
-      max-height: 350px !important;
-      padding: 0.8em !important;
+      font-size: 0.7em !important;
+      max-height: 300px !important;
+      padding: 0.6em !important;
     }
-    .reveal table { font-size: 0.82em !important; }
-    .card { padding: 0.8em !important; }
+    .reveal table { font-size: 0.78em !important; }
+    .card { padding: 0.6em !important; }
     .two-col { flex-direction: column !important; }
     .pattern-grid { grid-template-columns: 1fr !important; }
-    .tag { font-size: 0.8em !important; }
-    .small { font-size: 0.85em !important; }
-    .medium { font-size: 0.95em !important; }
-    .checklist li { font-size: 0.9em !important; }
-    .cover-subtitle { font-size: 1em !important; }
+    .tag { font-size: 0.75em !important; }
+    .small { font-size: 0.8em !important; }
+    .medium { font-size: 0.9em !important; }
+    .checklist li { font-size: 0.85em !important; }
+    .cover-subtitle { font-size: 0.9em !important; }
+    .cover-tag { font-size: 0.75em !important; padding: 0.3em 0.7em !important; }
   }
 </style>
 </head>
