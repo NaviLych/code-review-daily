@@ -668,14 +668,14 @@ function goHome() {
 
 // ===== Show / Hide views =====
 function showHome() {
-  document.getElementById('homeView').style.display = '';
+  document.getElementById('homeView').style.display = 'block';
   document.getElementById('readerView').style.display = 'none';
   document.title = 'Code Review Daily | 每日代码审查练习';
 }
 
 function showReader() {
   document.getElementById('homeView').style.display = 'none';
-  document.getElementById('readerView').style.display = '';
+  document.getElementById('readerView').style.display = 'block';
 }
 
 // ===== Build TOC from rendered HTML =====
