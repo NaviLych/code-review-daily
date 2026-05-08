@@ -749,14 +749,14 @@ function loadAndRenderMD(filePath) {
   var mdContent = document.getElementById('mdContent');
   mdContent.innerHTML = '<div class="reader-loading"><div class="spinner"></div>加载中...</div>';
 
-  dbg(' Loading:', filePath);
+  console.log('Loading:', filePath);
   fetch(filePath)
     .then(function(resp) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       return resp.text();
     })
     .then(function(mdText) {
-      dbg(' MD loaded, length:', mdText.length);
+      console.log('MD loaded, length:', mdText.length);
       var html = marked.parse(mdText);
       mdContent.innerHTML = html;
       // Re-highlight code blocks that marked didn't handle
