@@ -719,8 +719,8 @@
      5. 页面会自动更新统计数字和卡片列表
      =================================================================== -->
 <script>
-const REVIEW_PATTERN_COUNT = 16;
-const ARCH_PATTERN_COUNT   = 8;
+const REVIEW_PATTERN_COUNT = 23;
+const ARCH_PATTERN_COUNT   = 12;
 
 const days = [
   {
@@ -772,6 +772,33 @@ const days = [
     links: {
       md: "days/2026-05-08.md",
       html: "days/2026-05-08-presentation.html"
+    }
+  },
+  {
+    date: "2026-05-09",
+    dayNumber: 4,
+    samples: [
+      { name: "synchronized集合迭代删除 (Payment Gateway)", lang: "java" },
+      { name: "Virtual Thread synchronized Pinning (Transfer)", lang: "java" },
+      { name: "双重检查锁定缺volatile (Risk Engine)", lang: "java" },
+      { name: "价值类对象作锁 Boolean/Integer (Settlement)", lang: "java" },
+      { name: "StructuredTaskScope缺join (Batch Pay)", lang: "java" },
+      { name: "CompletableFuture异常吞噬 (Query)", lang: "java" },
+      { name: "锁内Thread.sleep死锁 (Confirm)", lang: "java" }
+    ],
+    findings: [
+      { text: "synchronizedList迭代+删除: ConcurrentModificationException", severity: "red" },
+      { text: "synchronized方法+IO: Virtual Thread pinning, 50→500 TPS", severity: "red" },
+      { text: "双重检查锁定缺volatile: 返回半构造对象, 风控规则可能完全失效", severity: "red" },
+      { text: "Boolean/Integer作锁: JVM全局缓存, 与第三方库死锁", severity: "red" },
+      { text: "StructuredTaskScope缺join: 僵尸线程+ArrayList并发写", severity: "red" },
+      { text: "CompletableFuture无handle/timeout: 异常被静默吞噬", severity: "red" },
+      { text: "锁内sleep不释放monitor: wait/notify才是正确模式", severity: "red" },
+      { text: "ReentrantLock+tryLock超时+锁排序: 转账10倍性能提升", severity: "green" }
+    ],
+    links: {
+      md: "days/2026-05-09.md",
+      html: "days/2026-05-09-presentation.html"
     }
   }
 ];

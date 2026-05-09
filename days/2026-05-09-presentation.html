@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代码审查 2026-05-09 | AI生成Java并发代码的致命Bug</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/vs2015.min.css">
+<style>
+:root {
+  --bg-dark: #1e1e2e;
+  --bg-code: #1a1a2e;
+  --accent-red: #f38ba8;
+  --accent-green: #a6e3a1;
+  --accent-yellow: #f9e2af;
+  --accent-blue: #89b4fa;
+  --accent-purple: #cba6f7;
+  --accent-peach: #fab387;
+  --accent-teal: #94e2d5;
+  --text-primary: #cdd6f4;
+  --text-muted: #6c7086;
+}
+.reveal-viewport { background: var(--bg-dark); }
+.reveal { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', Menlo, monospace; color: var(--text-primary); font-size: 18px; }
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif; font-weight: 700; text-transform: none; letter-spacing: -0.01em; }
+.reveal h1 { font-size: 2.2em; background: linear-gradient(135deg, var(--accent-red), var(--accent-peach)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.reveal h2 { font-size: 1.5em; color: var(--accent-blue); margin-bottom: 0.5em; }
+.reveal h3 { font-size: 1.15em; color: var(--accent-purple); }
+.reveal h4 { font-size: 1em; color: var(--accent-teal); }
+.reveal section { text-align: left; padding: 20px 40px; }
+.reveal pre { width: 100%; margin: 8px 0; font-size: 0.55em; line-height: 1.35; }
+.reveal pre code { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; background: var(--bg-code); border: 1px solid #313244; border-radius: 8px; padding: 12px 14px !important; max-height: none !important; overflow: visible !important; white-space: pre; }
+.reveal code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; background: rgba(49,50,68,0.7); padding: 2px 6px; border-radius: 4px; }
+.reveal table { font-size: 0.75em; margin: 10px 0; width: 100%; border-collapse: collapse; }
+.reveal table th { background: #313244; color: var(--accent-blue); padding: 6px 10px; text-align: left; border: 1px solid #45475a; }
+.reveal table td { padding: 5px 10px; border: 1px solid #313244; color: var(--text-primary); }
+.reveal table tr:hover td { background: rgba(49,50,68,0.5); }
+.reveal ul, .reveal ol { margin: 8px 0 8px 20px; font-size: 0.85em; }
+.reveal li { margin: 4px 0; }
+.severity-fatal { color: var(--accent-red); font-weight: 700; }
+.severity-high { color: var(--accent-peach); font-weight: 600; }
+.severity-mid { color: var(--accent-yellow); }
+.severity-ok { color: var(--accent-green); }
+.badge { display: inline-block; font-size: 0.7em; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin: 0 4px; vertical-align: middle; }
+.badge-red { background: rgba(243,139,168,0.2); color: var(--accent-red); }
+.badge-green { background: rgba(166,227,161,0.2); color: var(--accent-green); }
+.badge-yellow { background: rgba(249,226,175,0.2); color: var(--accent-yellow); }
+.badge-blue { background: rgba(137,180,250,0.2); color: var(--accent-blue); }
+.badge-purple { background: rgba(203,166,247,0.2); color: var(--accent-purple); }
+.finding-box { background: rgba(243,139,168,0.08); border-left: 3px solid var(--accent-red); padding: 10px 14px; margin: 8px 0; border-radius: 0 8px 8px 0; font-size: 0.8em; }
+.good-box { background: rgba(166,227,161,0.08); border-left: 3px solid var(--accent-green); padding: 10px 14px; margin: 8px 0; border-radius: 0 8px 8px 0; font-size: 0.8em; }
+.warn-box { background: rgba(249,226,175,0.08); border-left: 3px solid var(--accent-yellow); padding: 10px 14px; margin: 8px 0; border-radius: 0 8px 8px 0; font-size: 0.8em; }
+.source-link { font-size: 0.65em; color: var(--accent-blue); text-decoration: none; opacity: 0.7; }
+.source-link:hover { opacity: 1; text-decoration: underline; }
+.emoji-icon { font-size: 1.2em; vertical-align: middle; }
+.two-col { display: flex; gap: 16px; }
+.two-col > div { flex: 1; }
+@media (max-width: 768px) {
+  .reveal { font-size: 14px; }
+  .reveal pre { font-size: 0.45em; }
+  .reveal section { padding: 10px 16px; }
+  .two-col { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- Slide 1: Title -->
+<section>
+<h1>🔴 AI生成Java并发代码的致命Bug</h1>
+<p style="font-size:1.1em;color:var(--accent-peach);margin-top:20px;">7个"测试通过、上线炸裂"的并发缺陷</p>
+<p style="font-size:0.8em;color:var(--text-muted);margin-top:30px;">代码审查练习 · Day 4 · 2026-05-09</p>
+<p style="font-size:0.65em;color:var(--text-muted);margin-top:10px;">
+  来源：<a class="source-link" href="https://markaicode.com" target="_blank">markaicode.com</a> · 
+  <a class="source-link" href="https://rules.sonarsource.com" target="_blank">Sonar Blog</a>
+</p>
+</section>
+
+<!-- Slide 2: Core Insight -->
+<section>
+<h2>💡 核心洞察</h2>
+<div class="finding-box">
+  <p><strong>并发Bug = "时序依赖型"缺陷</strong></p>
+  <p>单线程测试 <span class="badge badge-green">100%通过</span> · 生产环境负载下 <span class="badge badge-red">100%爆发</span></p>
+</div>
+<p style="font-size:0.8em;margin-top:16px;">Sonar LLM Leaderboard 数据：</p>
+<table>
+  <tr><th>模型</th><th>并发Bug密度</th><th>对比</th></tr>
+  <tr><td>GPT-5.2 High</td><td class="severity-fatal">470/M LOC</td><td>基准</td></tr>
+  <tr><td>Gemini 3.0 Pro</td><td class="severity-ok">69/M LOC</td><td>7倍差距</td></tr>
+</table>
+<p style="font-size:0.75em;color:var(--text-muted);margin-top:10px;">→ 密度差距大，但本质相同：正确性依赖线程调度时序，传统测试彻底失效</p>
+</section>
+
+<!-- Slide 3: Sample A - synchronizedList -->
+<section>
+<h2>🔴 A: synchronized集合的假安全感</h2>
+<p style="font-size:0.7em;color:var(--text-muted);">银行支付网关 · <a class="source-link" href="https://markaicode.com" target="_blank">来源: markaicode.com</a></p>
+<pre><code class="language-java">private List&lt;PaymentTransaction&gt; activeTransactions = 
+    Collections.synchronizedList(new ArrayList&lt;&gt;());
+
+private void cleanupCompleted() {
+    // ❌ 对synchronizedList迭代+删除
+    for (PaymentTransaction tx : activeTransactions) {
+        if (tx.getStatus() == TransactionStatus.COMPLETED) {
+            activeTransactions.remove(tx);  // 💥 ConcurrentModificationException!
+        }
+    }
+}</code></pre>
+<div class="finding-box">
+  <p><span class="emoji-icon">🔑</span> synchronizedList 只保证单操作原子性，<strong>不保证复合操作</strong>（迭代+删除）</p>
+</div>
+</section>
+
+<!-- Slide 4: Sample A - Fix -->
+<section>
+<h2>✅ A: 修复方案</h2>
+<pre><code class="language-java">// ✅ 使用专为并发设计的集合
+private final ConcurrentLinkedQueue&lt;PaymentTransaction&gt; activeTransactions = 
+    new ConcurrentLinkedQueue&lt;&gt;();
+
+private void cleanupCompleted() {
+    // ✅ ConcurrentLinkedQueue.removeIf 是线程安全的
+    activeTransactions.removeIf(tx -&gt; 
+        tx.getStatus() == TransactionStatus.COMPLETED 
+        || tx.getStatus() == TransactionStatus.REJECTED
+    );
+}</code></pre>
+<div class="good-box">
+  <p><span class="emoji-icon">✅</span> ConcurrentLinkedQueue 迭代安全 · removeIf 原子操作 · 清理移出 finally</p>
+</div>
+</section>
+
+<!-- Slide 5: Sample B - Virtual Thread Pinning -->
+<section>
+<h2>🔴 B: synchronized杀死Virtual Thread</h2>
+<p style="font-size:0.7em;color:var(--text-muted);">银行账户转账 · <a class="source-link" href="https://markaicode.com" target="_blank">markaicode.com</a> · <a class="source-link" href="https://rules.sonarsource.com" target="_blank">Sonar Blog</a></p>
+<pre><code class="language-java">// ❌ synchronized方法 + IO操作 = Virtual Thread pinning
+public synchronized TransferResult transfer(
+        Long fromAccountId, Long toAccountId, BigDecimal amount) {
+    Account from = accountRepository.findById(fromAccountId).orElseThrow();  // DB查询
+    Account to = accountRepository.findById(toAccountId).orElseThrow();      // DB查询
+    from.debit(amount);
+    to.credit(amount);
+    accountRepository.save(from);   // DB写入
+    accountRepository.save(to);     // DB写入
+    auditLogService.logTransfer();  // DB写入
+    notificationService.notify();   // 网络调用!
+    return TransferResult.success();
+}</code></pre>
+<div class="finding-box">
+  <p>synchronized → <strong>pin住载体线程</strong> → ForkJoinPool耗尽 → 所有Virtual Thread排队</p>
+  <p>实测：<span class="severity-fatal">synchronized ~50 TPS</span> vs <span class="severity-ok">ReentrantLock ~500 TPS</span>（10倍差距）</p>
+</div>
+</section>
+
+<!-- Slide 6: Sample B - Fix -->
+<section>
+<h2>✅ B: 细粒度锁 + 超时 + 锁排序</h2>
+<pre><code class="language-java">// ✅ 每个账户一把锁
+private final ConcurrentHashMap&lt;Long, ReentrantLock&gt; accountLocks = new ConcurrentHashMap&lt;&gt;();
+
+public TransferResult transfer(Long fromId, Long toId, BigDecimal amount) {
+    // ✅ 按ID排序获取锁，防止死锁
+    Long first = Math.min(fromId, toId);
+    Long second = Math.max(fromId, toId);
+    ReentrantLock lock1 = accountLocks.computeIfAbsent(first, k -&gt; new ReentrantLock());
+    ReentrantLock lock2 = accountLocks.computeIfAbsent(second, k -&gt; new ReentrantLock());
+    if (!lock1.tryLock(5, TimeUnit.SECONDS)) throw new TransferTimeoutException();
+    try {
+        if (!lock2.tryLock(5, TimeUnit.SECONDS)) throw new TransferTimeoutException();
+        try { return doTransfer(fromId, toId, amount); }
+        finally { lock2.unlock(); }
+    } finally { lock1.unlock(); }
+}</code></pre>
+<div class="good-box">
+  <p>✅ 不pin载体 · ✅ 超时防无限等 · ✅ 排序防死锁 · ✅ IO移出锁范围</p>
+</div>
+</section>
+
+<!-- Slide 7: Sample C - Double-Checked Locking -->
+<section>
+<h2>🔴 C: 双重检查锁定的幽灵</h2>
+<p style="font-size:0.7em;color:var(--text-muted);">银行风控引擎 · <a class="source-link" href="https://rules.sonarsource.com/java/RSPEC-2168/" target="_blank">Sonar S2168</a></p>
+<pre><code class="language-java">// ❌ 缺少volatile！
+private static RiskRuleChain ruleChain;
+
+public RiskRuleChain getRuleChain() {
+    if (ruleChain == null) {                   // 第1次检查
+        synchronized (RiskRuleEngine.class) {
+            if (ruleChain == null) {           // 第2次检查
+                ruleChain = loadRuleChain();    // ❌ 指令重排序！
+            }
+        }
+    }
+    return ruleChain;  // 可能返回半构造对象！
+}</code></pre>
+<div class="finding-box">
+  <p>JMM允许 <code>new</code> 的<strong>构造器初始化</strong>与<strong>引用赋值</strong>重排序 → 线程B看到非null但未初始化的对象</p>
+  <p>风控场景后果：规则链不完整 → <span class="severity-fatal">洗钱交易畅通无阻</span></p>
+</div>
+</section>
+
+<!-- Slide 8: Sample C - Fix + Sample D -->
+<section>
+<h2>✅ C: 修复 + 🔴 D: 价值类对象作锁</h2>
+<div class="two-col">
+<div>
+<h4>修复：Holder模式 + AtomicReference</h4>
+<pre><code class="language-java">// ✅ JVM类初始化天然线程安全
+private static class RuleChainHolder {
+  static final AtomicReference&lt;RiskRuleChain&gt; 
+    INSTANCE = new AtomicReference&lt;&gt;();
+}
+// 或更简洁：@PostConstruct</code></pre>
+</div>
+<div>
+<h4>🔴 Boolean/Integer作锁</h4>
+<pre><code class="language-java">private static final Boolean lock = Boolean.FALSE;
+synchronized (lock) { ... }
+// ❌ Boolean.FALSE全局唯一！
+// 所有第三方库竞争同一个monitor
+// 死锁堆栈毫无逻辑关联</code></pre>
+<p style="font-size:0.7em;">来源：<a class="source-link" href="https://rules.sonarsource.com/java/RSPEC-1860/" target="_blank">Sonar S1860</a></p>
+</div>
+</div>
+</section>
+
+<!-- Slide 9: Sample E - Structured Concurrency -->
+<section>
+<h2>🔴 E: Structured Concurrency缺join</h2>
+<p style="font-size:0.7em;color:var(--text-muted);">银行批量代发 · <a class="source-link" href="https://markaicode.com" target="_blank">markaicode.com</a></p>
+<pre><code class="language-java">try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    for (PaymentOrder order : orders) {
+        scope.fork(() -&gt; {
+            results.add(processPayment(order));  // ❌ ArrayList非线程安全
+            return null;
+        });
+    }
+    // ❌ 没有scope.join()！try-with-resources关闭时子任务仍在运行
+    // → 僵尸Virtual Thread → OOM
+}</code></pre>
+<div class="two-col">
+<div class="finding-box">
+  <p>🔴 缺join → 僵尸线程 → 线程数增长 → OOM</p>
+</div>
+<div class="finding-box">
+  <p>🔴 ArrayList并发add → 数据丢失/异常</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 10: Sample F + G -->
+<section>
+<h2>🔴 F: CompletableFuture异常吞噬 + 🔴 G: 锁内Sleep</h2>
+<div class="two-col">
+<div>
+<h4>F: 异步链无异常处理</h4>
+<pre><code class="language-java">CompletableFuture
+  .supplyAsync(() -&gt; accountClient.query())
+  .thenCompose(account -&gt; 
+    tradeClient.query())
+  .thenCompose(detail -&gt; 
+    riskClient.queryScore());
+// ❌ 任何一步失败，异常被静默吞噬
+// ❌ 无超时 → 永远pending</code></pre>
+<p style="font-size:0.65em;"><a class="source-link" href="https://markaicode.com" target="_blank">来源</a></p>
+</div>
+<div>
+<h4>G: 锁内Thread.sleep</h4>
+<pre><code class="language-java">synchronized (monitor) {
+    while (!isConfirmed()) {
+        Thread.sleep(200); // ❌ sleep不释放锁!
+        // 另一个方法需要同一锁来更新状态
+        // → 永远死锁!
+    }
+}
+// ✅ 改为 monitor.wait(200)
+// wait释放锁，notify唤醒</code></pre>
+<p style="font-size:0.65em;"><a class="source-link" href="https://rules.sonarsource.com/java/RSPEC-2276/" target="_blank">Sonar S2276</a></p>
+</div>
+</div>
+</section>
+
+<!-- Slide 11: 7 Pattern Summary -->
+<section>
+<h2>📋 7个并发审查模式</h2>
+<table>
+  <tr><th>编号</th><th>模式名称</th><th>识别关键词</th><th>严重度</th></tr>
+  <tr><td>CONC-001</td><td>synchronized集合迭代删除</td><td><code>synchronizedList + for-each + remove</code></td><td class="severity-fatal">致命</td></tr>
+  <tr><td>CONC-002</td><td>Virtual Thread synchronized pinning</td><td><code>synchronized方法 + IO操作</code></td><td class="severity-fatal">致命</td></tr>
+  <tr><td>CONC-003</td><td>双重检查锁定缺volatile</td><td><code>if(null) synchronized if(null)</code></td><td class="severity-fatal">致命</td></tr>
+  <tr><td>CONC-004</td><td>价值类对象作锁</td><td><code>synchronized(Boolean/Integer)</code></td><td class="severity-fatal">致命</td></tr>
+  <tr><td>CONC-005</td><td>StructuredTaskScope缺join</td><td><code>scope.fork() 无 scope.join()</code></td><td class="severity-fatal">致命</td></tr>
+  <tr><td>CONC-006</td><td>CompletableFuture异常吞噬</td><td><code>链式调用无handle/timeout</code></td><td class="severity-fatal">致命</td></tr>
+  <tr><td>CONC-007</td><td>锁内Thread.sleep</td><td><code>synchronized { Thread.sleep() }</code></td><td class="severity-fatal">致命</td></tr>
+</table>
+</section>
+
+<!-- Slide 12: Checklist -->
+<section>
+<h2>✅ 并发审查Checklist</h2>
+<ul>
+  <li><code>Collections.synchronized*()</code> 的迭代操作是否安全？</li>
+  <li>Virtual Thread 环境中是否用了 <code>synchronized</code>？能否改 <code>ReentrantLock</code>？</li>
+  <li>双重检查锁定是否缺 <code>volatile</code>？能否改用 Holder 模式？</li>
+  <li>锁对象是否为 <code>Boolean/Integer/String</code> 等价值类？</li>
+  <li>StructuredTaskScope 关闭前是否调了 <code>join()</code>？</li>
+  <li>CompletableFuture 链是否有 <code>whenComplete/handle/orTimeout</code>？</li>
+  <li>synchronized 块内是否有 <code>Thread.sleep()</code>？应改 <code>wait()</code></li>
+  <li>锁粒度是否合理？是否包含 IO/网络操作？</li>
+  <li>多把锁获取顺序是否一致？是否可能死锁？</li>
+  <li>并发集合选择是否匹配场景？</li>
+</ul>
+</section>
+
+<!-- Slide 13: Good vs Bad Design -->
+<section>
+<h2>🏗️ 架构评估：好设计 vs 坏设计</h2>
+<div class="two-col">
+<div class="good-box">
+  <h4>✅ ReentrantLock + tryLock超时</h4>
+  <p>· 不pin Virtual Thread<br>· 超时防无限等待<br>· 细粒度：每资源独立锁<br>· 支持可中断/尝试获取</p>
+  <h4>✅ 静态内部类Holder模式</h4>
+  <p>· JVM类初始化保证线程安全<br>· 零同步代码，零性能开销<br>· 惰性加载，代码极简</p>
+</div>
+<div class="finding-box">
+  <h4>🔴 synchronized方法级锁定+IO</h4>
+  <p>· 粒度过粗：整个方法持锁<br>· Virtual Thread pinning<br>· IO拖长锁持有时间<br>· 全局串行化，TPS极低</p>
+  <h4>🔴 Collections.synchronized*()</h4>
+  <p>· 虚假安全感，比显式不安全更危险<br>· 复合操作不原子<br>· 性能不如j.u.c集合</p>
+</div>
+</div>
+</section>
+
+<!-- Slide 14: Conclusion -->
+<section>
+<h2>🎯 今日结论</h2>
+<div class="warn-box" style="border-left-color:var(--accent-red);background:rgba(243,139,168,0.12);">
+  <p style="font-size:1.1em;"><strong>并发Bug的本质是"时序依赖"</strong></p>
+  <p>单线程测试中 100% 通过 · 生产环境竞争下 100% 爆发</p>
+  <p>→ 传统测试无法捕获 · 只有结构化审查+静态分析才能可靠识别</p>
+</div>
+<p style="font-size:0.8em;margin-top:20px;color:var(--text-muted);">7个模式 · 7个致命Bug · 全部在银行支付/转账/风控/清算场景中</p>
+<p style="font-size:0.65em;margin-top:15px;">
+  来源：<a class="source-link" href="https://markaicode.com" target="_blank">markaicode.com</a> · 
+  <a class="source-link" href="https://rules.sonarsource.com/java/RSPEC-2168/" target="_blank">Sonar S2168</a> · 
+  <a class="source-link" href="https://rules.sonarsource.com/java/RSPEC-1860/" target="_blank">Sonar S1860</a> · 
+  <a class="source-link" href="https://rules.sonarsource.com/java/RSPEC-2276/" target="_blank">Sonar S2276</a>
+</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/highlight.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  center: true,
+  transition: 'slide',
+  width: 1100,
+  height: 700,
+  margin: 0.04,
+  plugins: [RevealHighlight],
+  highlight: {
+    escapeHTML: false
+  }
+});
+</script>
+</body>
+</html>
