@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 代码审查练习 - 2026-05-10 | AI生成代码的典型缺陷</title>
+    <!-- Reveal.js only loads on desktop (min-width: 769px) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css"
+          media="(min-width: 769px)">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css"
+          media="(min-width: 769px)">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+
+    <style>
+        /* ===== VS Code Dark+ 全局配色 ===== */
+        :root {
+            --bg-color: #1e1e1e;
+            --code-bg: #252526;
+            --accent: #569cd6;
+            --red: #f44747;
+            --green: #6a9955;
+            --yellow: #dcdcaa;
+            --orange: #ce9178;
+            --purple: #c586c0;
+            --cyan: #4ec9b0;
+        }
+
+        /* ===== Reveal.js 桌面端样式 ===== */
+        .reveal {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            font-size: 28px;
+            background: var(--bg-color);
+        }
+
+        .reveal .slides { text-align: left; }
+
+        .reveal h1, .reveal h2, .reveal h3 {
+            text-transform: none;
+            font-weight: 600;
+        }
+
+        .reveal h1 { font-size: 2.2em; color: #fff; }
+        .reveal h2 { font-size: 1.5em; color: var(--accent); }
+        .reveal h3 { font-size: 1.2em; color: var(--yellow); }
+
+        .reveal pre {
+            width: 100%;
+            font-size: 0.52em;
+            background: var(--code-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .reveal code {
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .reveal pre code {
+            background: transparent;
+            padding: 0;
+            max-height: 480px;
+        }
+
+        .reveal ul, .reveal ol { margin-left: 1em; }
+        .reveal li { margin: 0.4em 0; }
+
+        .reveal table {
+            font-size: 0.65em;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .reveal table th {
+            background: #333;
+            color: #fff;
+        }
+
+        .reveal table td, .reveal table th {
+            border: 1px solid #444;
+            padding: 6px 10px;
+        }
+
+        .reveal table tr:nth-child(even) { background: #2a2a2a; }
+
+        /* ===== 通用 UI 组件 ===== */
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            margin-left: 8px;
+        }
+
+        .tag-red   { background: var(--red);    color: #fff; }
+        .tag-yellow{ background: var(--yellow);  color: #333; }
+        .tag-green { background: var(--green);   color: #fff; }
+        .tag-blue  { background: var(--accent);  color: #fff; }
+        .tag-purple{ background: var(--purple); color: #fff; }
+
+        .highlight-line {
+            background: rgba(244, 71, 71, 0.25);
+            display: block;
+            margin: 0 -15px;
+            padding: 0 15px;
+        }
+
+        .source-link {
+            font-size: 0.55em;
+            color: #888;
+            margin-top: 0.5em;
+        }
+
+        .source-link a { color: var(--accent); }
+
+        .two-col {
+            display: flex;
+            gap: 20px;
+        }
+
+        .two-col > div { flex: 1; }
+
+        .summary-box {
+            background: #2d2d2d;
+            border-left: 4px solid var(--accent);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background: rgba(244, 71, 71, 0.15);
+            border-left: 4px solid var(--red);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .success-box {
+            background: rgba(106, 153, 85, 0.15);
+            border-left: 4px solid var(--green);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .reveal .footer {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.45em;
+            color: #666;
+        }
+
+        /* ===== 移动端样式 (无 Reveal.js) ===== */
+        @media (max-width: 768px) {
+            body {
+                font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+                background: var(--bg-color);
+                color: #d4d4d4;
+                padding: 16px;
+                line-height: 1.7;
+            }
+
+            h1 { font-size: 1.6em; color: #fff; margin-bottom: 8px; }
+            h2 { font-size: 1.3em; color: var(--accent); margin: 20px 0 10px; }
+            h3 { font-size: 1.1em; color: var(--yellow); margin: 16px 0 8px; }
+
+            pre {
+                background: var(--code-bg);
+                border-radius: 8px;
+                padding: 12px;
+                overflow-x: auto;
+                font-size: 0.8em;
+                font-family: 'Fira Code', 'Consolas', monospace;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+            }
+
+            code {
+                font-family: 'Fira Code', 'Consolas', monospace;
+                font-size: 0.85em;
+            }
+
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 0.8em;
+                margin: 10px 0;
+            }
+
+            table th, table td {
+                border: 1px solid #444;
+                padding: 6px 8px;
+            }
+
+            table th { background: #333; color: #fff; }
+            table tr:nth-child(even) { background: #2a2a2a; }
+
+            .section-divider {
+                border-top: 1px solid #444;
+                margin: 24px 0;
+                padding-top: 16px;
+            }
+
+            .mobile-source {
+                font-size: 0.75em;
+                color: #888;
+                margin: 8px 0;
+                word-break: break-all;
+            }
+
+            .mobile-source a { color: var(--accent); }
+        }
+
+        @media (max-width: 768px) {
+            .reveal { display: none; }
+        }
+
+        @media (min-width: 769px) {
+            body { display: none; }
+            /* hide mobile content on desktop */
+            .mobile-content { display: none; }
+        }
+
+        /* desktop: hide mobile content */
+        .mobile-content { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================
+     移动端长文档布局 (当屏幕 < 769px 时，绕过 Reveal.js)
+     内容与幻灯片完全同步
+============================================================ -->
+<div class="mobile-content">
+    <h1>🔍 AI 代码审查练习 · 2026-05-10</h1>
+    <p style="color:#888;font-size:0.85em;">主题：AI 生成代码的典型缺陷</p>
+
+    <div class="section-divider">
+        <h2>一、Java/Spring Boot 典型错误模式</h2>
+
+        <h3>1.1 🔴 withDefaultPasswordEncoder() 陷阱 <span class="tag tag-red">废弃 API</span></h3>
+        <p><strong>来源</strong>: <a href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot" target="_blank">SonarSource - GPT-5.5's biggest blind spot</a></p>
+        <pre><code class="java">// ❌ AI 生成的有缺陷代码
+@Bean
+public UserDetailsService userDetailsService() {
+    UserDetails user = User.withDefaultPasswordEncoder()  // ⚠️ 已废弃!
+        .username("admin")
+        .password("password")
+        .roles("USER")
+        .build();
+    return new InMemoryUserDetailsManager(user);
+}</code></pre>
+        <div class="summary-box">
+            <strong>问题</strong>: withDefaultPasswordEncoder() 内部创建新的 encoder，与 BCrypt bean 不一致，产生安全警告
+        </div>
+        <pre><code class="java">// ✅ 修复方案
+@Bean
+public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+    UserDetails user = User.builder()
+        .username("admin")
+        .password(passwordEncoder.encode("password"))  // 使用注入的 encoder
+        .roles("USER")
+        .build();
+    return new InMemoryUserDetailsManager(user);
+}</code></pre>
+
+        <h3>1.2 🔴 CORS 配置缺失 <span class="tag tag-red">隐蔽陷阱</span></h3>
+        <pre><code class="java">// ❌ 没有实际的 CorsConfigurationSource
+http.cors().and()  // ⚠️ 前端 CORS 错误
+    .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());</code></pre>
+        <pre><code class="java">// ✅ 修复方案
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOriginPatterns(List.of("http://localhost:*"));
+    configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+    configuration.setAllowedHeaders(List.of("*"));
+    configuration.setAllowCredentials(true);
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}</code></pre>
+
+        <h3>1.3 🔴 WebSecurityConfigurerAdapter 废弃 <span class="tag tag-red">无法编译</span></h3>
+        <pre><code class="java">// ❌ Spring Boot 3 已废弃，无法编译
+public class SecurityConfig extends WebSecurityConfigurerAdapter {  // ⚠️ 废弃!
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {  // ⚠️ 废弃!
+        http.authorizeRequests()  // ⚠️ 废弃!
+            .antMatchers("/api/public/**").permitAll()  // ⚠️ 废弃!
+            .anyRequest().authenticated();
+    }
+}</code></pre>
+        <pre><code class="java">// ✅ Spring Boot 3 正确写法
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    return http
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/public/**").permitAll()
+            .anyRequest().authenticated()
+        )
+        .build();
+}</code></pre>
+
+        <h3>1.4 🟡 Collectors.toList() 废弃 <span class="tag tag-yellow">Java 16+</span></h3>
+        <pre><code class="java">// ⚠️ 产生废弃警告
+.collect(Collectors.toList());  // 已废弃
+
+// ✅ 简洁替代
+.toList();</code></pre>
+
+        <h3>1.5 🔴 parallelStream() 资源耗尽 <span class="tag tag-red">危险陷阱</span></h3>
+        <pre><code class="java">// ❌ 数据库连接池耗尽
+orders.parallelStream()
+    .forEach(order -> orderRepository.save(order));  // ⚠️ IO 密集型禁用并行
+
+// ✅ 批量操作
+orderRepository.saveAll(orders);</code></pre>
+    </div>
+
+    <div class="section-divider">
+        <h2>二、Swift/iOS 典型错误模式</h2>
+
+        <h3>2.1 🔴 nil → 空字符串 语义变更 <span class="tag tag-red">隐蔽陷阱</span></h3>
+        <pre><code class="swift">// ❌ AI 消除了 nil，破坏了契约
+func getUserName() -> String {  // ⚠️ 应为 String?
+    if let user { return user.name }
+    return ""  // nil = "没用户"，"" = "有用户没名字"，语义完全不同!
+}
+
+// ✅ 正确保留 Optional
+func getUserName() -> String? { return user?.name }</code></pre>
+
+        <h3>2.2 🔴 强制解包崩溃 <span class="tag tag-red">运行时崩溃</span></h3>
+        <pre><code class="swift">// ❌ 运行时崩溃
+let image = UIImage(named: "aMissingIcon")!  // ⚠️
+
+// ✅ 安全处理
+if let image = UIImage(named: "aMissingIcon") {
+    print("Image size: \(image.size)")
+} else {
+    // 处理缺失情况
+}</code></pre>
+
+        <h3>2.3 🟡 KVO 未现代化 <span class="tag tag-yellow">非最佳实践</span></h3>
+        <pre><code class="swift">// ⚠️ stringly-typed API，容易拼写错误，deinit 容易遗漏
+dataManager.addObserver(self, forKeyPath: "status", options: .new, context: nil)
+
+// ✅ SwiftUI @Observable (iOS 17+)
+@Observable
+class DataManager { var status: String = "" }
+struct ContentView: View {
+    @State private var manager = DataManager()
+}</code></pre>
+
+        <h3>2.4 🟡 Swift: 串行 await vs 并行 async let <span class="tag tag-yellow">性能陷阱</span></h3>
+        <p><strong>来源</strong>: <a href="https://swiftwithvincent.squarespace.com/blog/three-mistakes-to-avoid-with-async-await-in-swift" target="_blank">3 mistakes to avoid with async/await</a></p>
+        <pre><code class="swift">// ❌ 串行：总耗时 = t1 + t2 + t3
+let user = await getUser()
+let address = await getAddress(of: user)
+let payment = await getPayment(of: user)
+
+// ✅ 并行：总耗时 = max(t1, t2, t3)
+async let user = getUser()
+async let address = getAddress(of: user)
+async let payment = getPayment(of: user)
+let (u, a, p) = try await (user, address, payment)</code></pre>
+
+        <h3>2.5 🔴 Swift: Task 隐式捕获 self 内存泄漏 <span class="tag tag-red">内存泄漏</span></h3>
+        <pre><code class="swift">// ❌ Task 持有 ViewModel 引用 + 无限序列 → 永不释放
+@MainActor
+class ViewModel {
+    func listenToNotifications() {
+        Task {
+            let notifications = NotificationCenter.default.notifications(
+                named: UIDevice.orientationDidChangeNotification
+            )
+            for await notification in notifications {
+                self.handle(notification)  // ⚠️ 强引用 self
+            }
+        }
+    }
+}
+
+// ✅ 修复：[weak self] 在循环内部 unwrap
+Task { [weak self] in
+    guard let self else { return }
+    for await notification in notifications {
+        self.handle(notification)  // ✅ 可以正常结束
+    }
+}</code></pre>
+
+        <h3>2.6 🟡 Swift: Task.detached 滥用 <span class="tag tag-yellow">过度设计</span></h3>
+        <pre><code class="swift">// ⚠️ 脱离 @MainActor 上下文，需额外 await
+Task.detached { [weak self] in
+    // ... 需要 await self.handle(notification)
+}
+
+// ✅ 优先使用普通 Task
+Task { [weak self] in /* 直接访问 @MainActor 属性 */ }</code></pre>
+    </div>
+
+    <div class="section-divider">
+        <h2>三、Java 25 新特性陷阱</h2>
+
+        <h3>3.1 🔴 ScopedValue 不传播到线程池 <span class="tag tag-red">新特性陷阱</span></h3>
+        <p><strong>来源</strong>: <a href="https://www.sonarsource.com/blog/ai-can-write-java-25-right-with-sonarqube/" target="_blank">Your AI can write Java 25 right with SonarQube</a></p>
+        <pre><code class="java">// ❌ ScopedValue 绑定不传播到 ExecutorService 线程
+ScopedValue.where(REQUEST_ID, id).run(() -> {
+    executor.submit(() -> {  // ⚠️ 线程来自线程池
+        String reqId = REQUEST_ID.get(); // NoSuchElementException!
+        processAsync(reqId);
+    });
+});
+
+// ✅ 使用 StructuredTaskScope 创建子任务
+ScopedValue.where(REQUEST_ID, id).call(() -> {
+    try (var scope = StructuredTaskScope.open(Joiner.allSuccessfulOrThrow())) {
+        scope.fork(() -> {
+            String reqId = REQUEST_ID.get(); // ✅ 正确继承
+            processAsync(reqId); return null;
+        });
+        scope.join();
+    }
+    return null;
+});</code></pre>
+
+        <h3>3.2 🔴 ScopedValue.where() 结果被丢弃</h3>
+        <pre><code class="java">// ❌ Carrier 结果被丢弃，绑定从未激活
+ScopedValue.where(THEME, "DARK");  // ⚠️
+String currentTheme = THEME.get(); // NoSuchElementException!
+
+// ✅ 必须消费 Carrier
+ScopedValue.where(THEME, "DARK").run(this::renderUI);</code></pre>
+    </div>
+
+    <div class="section-divider">
+        <h2>四、跨语言设计智慧对比</h2>
+        <table>
+            <thead><tr><th>模式</th><th>Java</th><th>Swift</th><th>Go</th><th>Python</th></tr></thead>
+            <tbody>
+                <tr><td>轻量级并发</td><td>Virtual Threads</td><td>async/await + Task</td><td>goroutine</td><td>asyncio</td></tr>
+                <tr><td>共享状态</td><td>synchronized/volatile</td><td>Actor / @MainActor</td><td>channel</td><td>GIL 限制</td></tr>
+                <tr><td>上下文传递</td><td>ThreadLocal → ScopedValue</td><td>Task-local (iOS 17+)</td><td>context.Context</td><td>contextvars</td></tr>
+                <tr><td>结构化并发</td><td>StructuredTaskScope</td><td>TaskGroup</td><td>goroutine scope</td><td>-</td></tr>
+            </tbody>
+        </table>
+        <div class="summary-box">
+            <strong>通用原则</strong>：轻量级并发 ≠ 自动线程安全 · 上下文传递需要显式机制 · 结构化并发优于 ad-hoc 任务管理
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2>五、审查模式库 Checkpoint</h2>
+        <div class="summary-box">
+            <strong>AI 生成代码常见问题频率排行</strong><br>
+            🔴 高频高危：废弃 API、框架版本不匹配<br>
+            🟡 中频高危：并发安全缺失、资源管理疏忽<br>
+            🟡 高频中危：Optional 处理不当<br>
+            🟢 低频高危：类型语义变更、新特性误用
+        </div>
+        <div class="summary-box">
+            <strong>AI 自审问题清单</strong><br>
+            "你最不确定的 3 个边界情况是什么？"<br>
+            "这个 API 是否有版本废弃历史？"<br>
+            "有没有更简单的实现？"
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2>六、并发安全专题</h2>
+
+        <h3>6.1 🔴 Double-Checked Locking 无 volatile <span class="tag tag-red">经典陷阱</span></h3>
+        <p><strong>来源</strong>: <a href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot" target="_blank">SonarSource - GPT-5.5's biggest blind spot</a></p>
+        <pre><code class="java">// ❌ 可能返回部分构造对象
+public static Resource getInstance() {
+    if (resource == null) {
+        synchronized (ResourceFactory.class) {
+            if (resource == null)
+                resource = new Resource();  // ⚠️ JVM 重排序
+        }
+    }
+    return resource;
+}
+
+// ✅ 方案1: synchronized 方法 (推荐)
+// ✅ 方案2: Holder 模式
+private static class ResourceHolder {
+    public static Resource resource = new Resource();
+}
+public static Resource getInstance() { return ResourceHolder.resource; }</code></pre>
+
+        <h3>6.2 🔴 Boolean/FInteger 上 synchronize <span class="tag tag-red">隐蔽陷阱</span></h3>
+        <pre><code class="java">// ❌ Boolean.valueOf() 缓存 -128~127，与所有用户共享锁
+private static final Boolean bLock = Boolean.FALSE;
+synchronized (bLock) { /* ⚠️ 潜在死锁 */ }
+
+// ✅ 专用锁对象
+private final Object lock = new Object();
+synchronized (lock) { /* 安全 */ }</code></pre>
+        <div class="warning-box">
+            <strong>扩展</strong>：Integer、String、List.of() 同样有缓存/不可变陷阱，切勿用作锁对象
+        </div>
+    </div>
+
+    <div style="text-align:center;margin-top:40px;color:#666;font-size:0.8em;">
+        ✅ 今日练习完成 · <a href="https://github.com/NaviLych/code-review-daily/blob/main/days/20260510.md" style="color:var(--accent);">完整笔记</a>
+    </div>
+</div>
+
+<!-- ============================================================
+     Reveal.js 幻灯片 (桌面端)
+============================================================ -->
+<div class="reveal">
+    <div class="slides">
+
+        <!-- S1: 封面 -->
+        <section>
+            <h1>🔍 AI 代码审查练习</h1>
+            <p style="color: #888; font-size: 0.75em;">日期: 2026-05-10 · AI 生成代码的典型缺陷</p>
+            <div class="summary-box">
+                <h3>📋 今日涵盖</h3>
+                <ul>
+                    <li>Java/Spring Boot: 废弃 API + Stream + 并发安全</li>
+                    <li>Swift/iOS: Optional + KVO + async/await 三大陷阱</li>
+                    <li>Java 25: ScopedValue 新特性误用</li>
+                    <li>跨语言设计智慧对比</li>
+                </ul>
+            </div>
+            <p class="source-link">来源: <a href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot" target="_blank">SonarSource</a> · <a href="https://swiftwithvincent.squarespace.com/blog/three-mistakes-to-avoid-with-async-await-in-swift" target="_blank">Swift with Vincent</a> · <a href="https://www.sonarsource.com/blog/ai-can-write-java-25-right-with-sonarqube/" target="_blank">SonarSource Java 25</a></p>
+        </section>
+
+        <!-- S2: 目录 -->
+        <section>
+            <h2>📑 内容大纲</h2>
+            <ol>
+                <li><span class="tag tag-red">Java</span> Spring Security 废弃 API 陷阱</li>
+                <li><span class="tag tag-yellow">Java</span> Stream API 错误模式</li>
+                <li><span class="tag tag-red">Java</span> 并发安全 (DCL + Boolean 锁)</li>
+                <li><span class="tag tag-red">Swift</span> Optional 处理 + KVO 迁移</li>
+                <li><span class="tag tag-yellow">Swift</span> async/await 三大陷阱</li>
+                <li><span class="tag tag-red">Java 25</span> ScopedValue 新特性误用</li>
+                <li>🔄 跨语言设计智慧对比</li>
+                <li>📝 审查模式库与 Checkpoint</li>
+            </ol>
+        </section>
+
+        <!-- S3: Spring Security - withDefaultPasswordEncoder -->
+        <section>
+            <h2>🔴 Spring Security: <code>withDefaultPasswordEncoder()</code> <span class="tag tag-red">废弃 API</span></h2>
+            <pre><code class="java">// ❌ AI 生成的有缺陷代码
+@Bean
+public UserDetailsService userDetailsService() {
+    UserDetails user = User.withDefaultPasswordEncoder()  // ⚠️ 已废弃!
+        .username("admin")
+        .password("password")
+        .roles("USER")
+        .build();
+    return new InMemoryUserDetailsManager(user);
+}</code></pre>
+            <div class="warning-box">
+                <strong>⚠️ 问题</strong>: 内部创建新的 encoder，与 BCrypt bean 不一致 → 安全警告 + 密码编码不匹配
+            </div>
+            <pre><code class="java">// ✅ 修复: 依赖注入 BCrypt encoder
+public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+    UserDetails user = User.builder()
+        .password(passwordEncoder.encode("password"))  // 注入的 encoder
+        .roles("USER").build();
+    return new InMemoryUserDetailsManager(user);
+}</code></pre>
+            <p class="source-link">来源: <a href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot" target="_blank">SonarSource - GPT-5.5's biggest blind spot</a></p>
+        </section>
+
+        <!-- S4: CORS 缺失 + WebSecurityConfigurerAdapter -->
+        <section>
+            <h2>🔴 Spring Security: CORS 缺失 &amp; 废弃语法 <span class="tag tag-red">隐蔽陷阱</span></h2>
+            <div class="two-col">
+                <div>
+                    <h3>CORS 配置缺失</h3>
+                    <pre><code class="java">// ❌ cors() 但无配置
+http.cors().and()
+  .authorizeHttpRequests(auth ->
+    auth.anyRequest().authenticated()
+  );
+// ⚠️ 前端 CORS 预检失败</code></pre>
+                    <pre><code class="java">// ✅ CorsConfigurationSource
+configuration.setAllowedOriginPatterns(
+  List.of("http://localhost:*"));
+configuration.setAllowCredentials(true);</code></pre>
+                </div>
+                <div>
+                    <h3>WebSecurityConfigurerAdapter</h3>
+                    <pre><code class="java">// ❌ Spring Boot 3 已废弃 (无法编译)
+extends WebSecurityConfigurerAdapter
+configure(HttpSecurity http)  // ⚠️
+authorizeRequests()  // ⚠️
+antMatchers("/api/**")  // ⚠️</code></pre>
+                    <pre><code class="java">// ✅ Bean 风格
+.authorizeHttpRequests(auth -> auth
+  .requestMatchers("/api/public/**").permitAll()
+  .anyRequest().authenticated()
+)</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- S5: Stream API 错误 -->
+        <section>
+            <h2>🟡 Java Stream API 错误模式 <span class="tag tag-yellow">版本陷阱</span></h2>
+            <div class="two-col">
+                <div>
+                    <h3>Collectors.toList() 废弃</h3>
+                    <pre><code class="java">// ⚠️ Java 16+ 产生废弃警告
+.collect(Collectors.toList());
+// ⚠️ 返回可变 List
+
+// ✅ 直接 toList() 返回不可变 List
+.toList();</code></pre>
+                </div>
+                <div>
+                    <h3>parallelStream() 危险</h3>
+                    <pre><code class="java">// ❌ 数据库连接池耗尽
+orders.parallelStream()
+  .forEach(order ->
+    repo.save(order)  // ⚠️ IO 密集型
+  );
+
+// ✅ 批量操作
+repo.saveAll(orders);</code></pre>
+                    <div class="warning-box">
+                        <strong>⚠️</strong> parallelStream 适合 CPU 密集型，不适合 IO 密集型
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S6: DCL -->
+        <section>
+            <h2>🔴 Double-Checked Locking 无 volatile <span class="tag tag-red">经典陷阱</span></h2>
+            <pre><code class="java">// ❌ AI 常见生成: 可能返回部分构造对象
+public class ResourceFactory {
+    private static Resource resource;
+
+    public static Resource getInstance() {
+        if (resource == null) {
+            synchronized (ResourceFactory.class) {
+                if (resource == null)
+                    resource = new Resource(); <span class="highlight-line">// ⚠️ JVM 重排序!</span>
+            }
+        }
+        return resource;
+    }
+}</code></pre>
+            <div class="warning-box">
+                <strong>⚠️ 问题</strong>: JVM 可能重排序构造函数和字段赋值，线程 B 看到非 null 但未构造完成的对象
+            </div>
+            <p class="source-link">来源: <a href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot" target="_blank">SonarSource - GPT-5.5's biggest blind spot</a></p>
+        </section>
+
+        <!-- S7: DCL 修复 -->
+        <section>
+            <h2>✅ DCL 修复方案 &amp; Boolean 锁陷阱</h2>
+            <div class="two-col">
+                <div>
+                    <h3>方案1: synchronized 方法</h3>
+                    <pre><code class="java">public static synchronized
+    Resource getInstance() {
+    if (resource == null)
+        resource = new Resource();
+    return resource;
+}
+// ✅ 现代 JVM 开销可接受</code></pre>
+                    <h3>方案2: Holder 模式 (最佳)</h3>
+                    <pre><code class="java">private static class Holder {
+    public static Resource
+        resource = new Resource();
+}
+public static Resource getInstance() {
+    return Holder.resource;
+    // JVM 保证线程安全
+}</code></pre>
+                </div>
+                <div>
+                    <h3>🔴 Boolean/FInteger 锁陷阱</h3>
+                    <pre><code class="java">// ❌ Boolean.valueOf() 缓存
+private static final Boolean
+  bLock = Boolean.FALSE;
+synchronized (bLock) { <span class="highlight-line">// ⚠️ 与所有
+  Boolean.FALSE 用户共享!</span>
+}</code></pre>
+                    <div class="success-box">
+                        <strong>✅ 修复</strong>: <code>private final Object lock = new Object();</code><br>
+                        <span style="font-size:0.85em;color:#888">Integer、String、List.of() 同样危险</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S8: Swift Optional -->
+        <section>
+            <h2>🔴 Swift: nil → 空字符串 &amp; 强制解包 <span class="tag tag-red">语义陷阱</span></h2>
+            <div class="two-col">
+                <div>
+                    <h3>nil → 空字符串</h3>
+                    <pre><code class="swift">// ❌ 破坏契约
+func getUserName() -> String {
+    if let user {
+        return user.name
+    }
+    return ""  // ⚠️ 语义变更!
+}
+// nil = "没用户"
+// ""  = "有用户但没名字"</code></pre>
+                    <pre><code class="swift">// ✅ 保留 Optional
+func getUserName() -> String? {
+    return user?.name
+}</code></pre>
+                </div>
+                <div>
+                    <h3>强制解包崩溃</h3>
+                    <pre><code class="swift">// ❌ 运行时崩溃
+let image = UIImage(
+  named: "aMissingIcon")!  // ⚠️
+
+// ✅ 安全处理
+if let image = UIImage(
+    named: "aMissingIcon") {
+    print(image.size)
+} else {
+    // 处理缺失情况
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- S9: KVO 迁移 -->
+        <section>
+            <h2>🟡 KVO 未现代化 &amp; async/await 串行陷阱</h2>
+            <div class="two-col">
+                <div>
+                    <h3>KVO 迁移问题</h3>
+                    <pre><code class="swift">// ⚠️ stringly-typed API
+dataManager.addObserver(
+    self,
+    forKeyPath: "status",  // ⚠️ 易拼错
+    options: .new,
+    context: nil
+)
+deinit {
+    removeObserver(...)  // ⚠️ 易遗漏
+}</code></pre>
+                    <div class="success-box">
+                        <strong>✅ iOS 17+ @Observable</strong><br>
+                        <code>@Observable class DataManager { var status = "" }</code>
+                    </div>
+                </div>
+                <div>
+                    <h3>🟡 串行 await vs 并行</h3>
+                    <pre><code class="swift">// ❌ 串行: 总耗时 = t1+t2+t3
+let user = await getUser()
+let addr = await getAddress(of: user)
+let pay = await getPayment(of: user)
+
+// ✅ 并行: 总耗时 = max(t1,t2,t3)
+async let u = getUser()
+async let a = getAddress(of: u)
+async let p = getPayment(of: u)
+let (fu, fa, fp) = try await(u, a, p)</code></pre>
+                    <p class="source-link">来源: <a href="https://swiftwithvincent.squarespace.com/blog/three-mistakes-to-avoid-with-async-await-in-swift" target="_blank">Swift with Vincent</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- S10: Swift Task 内存泄漏 -->
+        <section>
+            <h2>🔴 Swift: Task 隐式捕获 self <span class="tag tag-red">内存泄漏</span></h2>
+            <pre><code class="swift">@MainActor
+class ViewModel {
+    func listenToNotifications() {
+        Task {
+            // ⚠️ self 被隐式捕获，Task 永不结束
+            let notifications = NotificationCenter.default.notifications(
+                named: UIDevice.orientationDidChangeNotification
+            )
+            for await notification in notifications {
+                self.handle(notification)  // 强引用 self!
+            }
+        }
+    }
+}</code></pre>
+            <div class="warning-box">
+                <strong>⚠️ 问题</strong>: Task 持有 ViewModel 引用，而无限序列让 Task 永不结束 → 内存泄漏
+            </div>
+            <p class="source-link">来源: <a href="https://swiftwithvincent.squarespace.com/blog/three-mistakes-to-avoid-with-async-await-in-swift" target="_blank">Swift with Vincent</a></p>
+        </section>
+
+        <!-- S11: Task 修复 -->
+        <section>
+            <h2>✅ Swift Task 内存泄漏修复 &amp; Task.detached 滥用</h2>
+            <div class="two-col">
+                <div>
+                    <h3>Task 内存泄漏修复</h3>
+                    <pre><code class="swift">@MainActor
+class ViewModel {
+    func listenToNotifications() {
+        Task { [weak self] in
+            guard let self else { return }
+
+            let notifications = NotificationCenter
+                .default.notifications(
+                named: UIDevice.orientationDidChangeNotification
+            )
+
+            for await notification in notifications {
+                self.handle(notification)
+                // ✅ 循环内部 unwrap
+            }
+        }
+    }
+}</code></pre>
+                    <div class="summary-box">
+                        <strong>💡 关键</strong>: <code>[weak self]</code> 必须在 <code>for</code> 循环<strong>内部</strong> unwrap
+                    </div>
+                </div>
+                <div>
+                    <h3>🟡 Task.detached 滥用</h3>
+                    <pre><code class="swift">// ⚠️ 脱离 @MainActor 上下文
+Task.detached { [weak self] in
+    // 无法直接访问 @MainActor 属性
+    await self?.handle(notification)
+    // 需要额外 await
+}</code></pre>
+                    <div class="success-box">
+                        <strong>✅ 建议</strong>: 优先使用普通 <code>Task</code>，只有确实需要脱离上下文时才用 <code>Task.detached</code>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S12: ScopedValue 不传播 -->
+        <section>
+            <h2>🔴 Java 25 ScopedValue: 不传播到线程池 <span class="tag tag-red">新特性陷阱</span></h2>
+            <pre><code class="java">static final ScopedValue&lt;String&gt; REQUEST_ID = ScopedValue.newInstance();
+
+void handleRequest(String id) {
+    ScopedValue.where(REQUEST_ID, id).run(() -> {
+        executor.submit(() -> { <span class="highlight-line">// ⚠️ 线程来自线程池
+            String reqId = REQUEST_ID.get(); // NoSuchElementException!</span>
+            processAsync(reqId);
+        });
+    });
+}</code></pre>
+            <div class="warning-box">
+                <strong>⚠️ 问题</strong>: ScopedValue 绑定<strong>不传播</strong>到 ExecutorService 的工作线程！<br>
+                必须使用 <code>StructuredTaskScope</code> 才能继承绑定
+            </div>
+            <p class="source-link">来源: <a href="https://www.sonarsource.com/blog/ai-can-write-java-25-right-with-sonarqube/" target="_blank">Your AI can write Java 25 right with SonarQube</a></p>
+        </section>
+
+        <!-- S13: ScopedValue 修复 + where() 丢弃 -->
+        <section>
+            <h2>✅ ScopedValue 正确用法 &amp; where() 丢弃陷阱</h2>
+            <div class="two-col">
+                <div>
+                    <h3>StructuredTaskScope 修复</h3>
+                    <pre><code class="java">void handleRequest(String id)
+    throws Exception {
+    ScopedValue.where(REQUEST_ID, id)
+    .call(() -> {
+        try (var scope =
+          StructuredTaskScope.open(
+          Joiner.allSuccessfulOrThrow())) {
+            scope.fork(() -> {
+                String reqId = REQUEST_ID.get();
+                // ✅ 正确继承
+                processAsync(reqId);
+                return null;
+            });
+            scope.join();
+        }
+        return null;
+    });
+}</code></pre>
+                </div>
+                <div>
+                    <h3>🔴 where() 结果被丢弃</h3>
+                    <pre><code class="java">// ❌ Carrier 结果被丢弃
+ScopedValue.where(THEME, "DARK");
+String theme = THEME.get();
+// ⚠️ NoSuchElementException!</code></pre>
+                    <div class="success-box">
+                        <strong>✅ 正确消费 Carrier</strong><br>
+                        <code>ScopedValue.where(THEME,"DARK")</code><br>
+                        <code>  .run(this::renderUI);</code><br>
+                        <span style="font-size:0.8em;color:#888">或 .call(()-&gt;{...})</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S14: 跨语言对比表 -->
+        <section>
+            <h2>🔄 跨语言并发设计智慧对比</h2>
+            <table>
+                <thead>
+                    <tr><th>模式</th><th>Java</th><th>Swift</th><th>Go</th><th>Python</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>轻量级并发</td><td>Virtual Threads</td><td>async/await + Task</td><td>goroutine</td><td>asyncio</td></tr>
+                    <tr><td>共享状态</td><td>synchronized/volatile</td><td>Actor / @MainActor</td><td>channel</td><td>GIL 限制</td></tr>
+                    <tr><td>上下文传递</td><td>ThreadLocal→ScopedValue</td><td>Task-local (iOS 17+)</td><td>context.Context</td><td>contextvars</td></tr>
+                    <tr><td>结构化并发</td><td>StructuredTaskScope</td><td>TaskGroup</td><td>goroutine scope</td><td>-</td></tr>
+                    <tr><td>并行列表</td><td>parallelStream()</td><td>async let</td><td>sync.WaitGroup</td><td>asyncio.gather</td></tr>
+                </tbody>
+            </table>
+            <div class="success-box">
+                <strong>✅ 通用原则</strong>: 轻量级并发 ≠ 自动线程安全 · 上下文传递需要显式机制 · 结构化并发优于 ad-hoc 任务管理
+            </div>
+        </section>
+
+        <!-- S15: 审查模式库 -->
+        <section>
+            <h2>📝 AI 生成代码问题频率排行</h2>
+            <table>
+                <thead>
+                    <tr><th>问题类别</th><th>频率</th><th>危险</th><th>典型案例</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>废弃 API 使用</td><td style="color:var(--red)">🔴 高</td><td style="color:var(--red)">🔴 高</td><td>withDefaultPasswordEncoder</td></tr>
+                    <tr><td>框架版本不匹配</td><td style="color:var(--red)">🔴 高</td><td style="color:var(--red)">🔴 高</td><td>Spring Boot 3 废弃语法</td></tr>
+                    <tr><td>并发安全缺失</td><td style="color:var(--yellow)">🟡 中</td><td style="color:var(--red)">🔴 极高</td><td>DCL 无 volatile</td></tr>
+                    <tr><td>Optional 处理不当</td><td style="color:var(--red)">🔴 高</td><td style="color:var(--yellow)">🟡 中</td><td>force unwrap</td></tr>
+                    <tr><td>资源管理疏忽</td><td style="color:var(--yellow)">🟡 中</td><td style="color:var(--red)">🔴 高</td><td>parallelStream + IO</td></tr>
+                    <tr><td>新特性误用</td><td style="color:var(--yellow)">🟡 中</td><td style="color:var(--red)">🔴 高</td><td>ScopedValue 不传播</td></tr>
+                    <tr><td>类型语义变更</td><td style="color:var(--green)">🟢 低</td><td style="color:var(--red)">🔴 高</td><td>nil → 空字符串</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- S16: AI 自审 Checkpoint -->
+        <section>
+            <h2>✅ 分层审查 Checkpoint</h2>
+            <div class="two-col">
+                <div>
+                    <h3>数据流审查</h3>
+                    <ul>
+                        <li>✅ 输入来源是否可信?</li>
+                        <li>✅ 中间变换是否改变语义?</li>
+                        <li>✅ 输出是否符合预期?</li>
+                        <li>✅ API 是否有版本废弃历史?</li>
+                    </ul>
+                    <h3>边界条件审查</h3>
+                    <ul>
+                        <li>✅ null/nil 处理</li>
+                        <li>✅ 溢出和越界</li>
+                        <li>✅ 并发访问</li>
+                        <li>✅ 资源泄漏</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>必要性审查</h3>
+                    <ul>
+                        <li>✅ 删除此代码会怎样?</li>
+                        <li>✅ 有没有更简单的实现?</li>
+                        <li>✅ 这是过度设计吗?</li>
+                    </ul>
+                    <div class="summary-box">
+                        <h3>🤖 AI 自审问题</h3>
+                        <ul>
+                            <li>"你最不确定的 3 个边界情况?"</li>
+                            <li>"有什么你没想到的?"</li>
+                            <li>"有没有更简洁的方案?"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S17: 总结 -->
+        <section>
+            <h1>✅ 今日练习完成</h1>
+            <div class="summary-box">
+                <h3>📚 主要收获</h3>
+                <ul>
+                    <li><span class="tag tag-red">Spring Security</span> 废弃 API: withDefaultPasswordEncoder、WebSecurityConfigurerAdapter、CORS 缺失</li>
+                    <li><span class="tag tag-yellow">Stream API</span> 废弃警告 + parallelStream 资源耗尽陷阱</li>
+                    <li><span class="tag tag-red">并发安全</span>: DCL 无 volatile + Boolean 锁共享陷阱</li>
+                    <li><span class="tag tag-red">Swift Optional</span>: nil 语义变更 + 强制解包崩溃 + KVO 未现代化</li>
+                    <li><span class="tag tag-yellow">Swift async/await</span>: 串行 await vs 并行 async let + Task 内存泄漏 + Task.detached 滥用</li>
+                    <li><span class="tag tag-red">Java 25</span>: ScopedValue 不传播到线程池 + where() 结果被丢弃</li>
+                </ul>
+            </div>
+            <p style="color: #888; margin-top: 16px;">
+                完整笔记: <a href="https://github.com/NaviLych/code-review-daily/blob/main/days/20260510.md" target="_blank">days/20260510.md</a>
+            </p>
+        </section>
+
+    </div>
+</div>
+
+<div class="footer">AI 代码审查练习 · NaviLych/code-review-daily · 2026-05-10</div>
+
+<!-- ============================================================
+     桌面端: Reveal.js 初始化
+============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/plugin/highlight/highlight.js"></script>
+<script>
+    // 只在桌面端初始化 Reveal.js
+    if (window.matchMedia('(min-width: 769px)').matches) {
+        Reveal.initialize({
+            hash: true,
+            slideNumber: 'c/t',
+            width: 1200,
+            height: 700,
+            margin: 0.08,
+            plugins: [ RevealHighlight ],
+            highlight: {
+                escapeHTML: false,
+                beforeHighlight: function(hljs) {
+                    return hljs;
+                }
+            }
+        });
+    }
+
+    // 移动端: 加载独立 highlight.js
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        var hljsScript = document.createElement('script');
+        hljsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+        hljsScript.onload = function() {
+            document.querySelectorAll('pre code').forEach(function(block) {
+                hljs.highlightElement(block);
+            });
+        };
+        document.head.appendChild(hljsScript);
+    }
+</script>
+</body>
+</html>

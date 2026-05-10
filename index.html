@@ -800,6 +800,31 @@ const days = [
       md: "days/2026-05-09.md",
       html: "days/2026-05-09-presentation.html"
     }
+  },
+  {
+    date: "2026-05-10",
+    dayNumber: 5,
+    samples: [
+      { name: "Spring Security 废弃API三陷阱", lang: "java" },
+      { name: "Java Stream API 错误模式", lang: "java" },
+      { name: "并发安全: Double-Checked Locking/Boolean锁", lang: "java" },
+      { name: "Swift Optional/KVO 迁移", lang: "swift" },
+      { name: "Swift async/await 并发三大陷阱", lang: "swift" },
+      { name: "Java 25 ScopedValue 绑定不传播", lang: "java" }
+    ],
+    findings: [
+      { text: "withDefaultPasswordEncoder内部encoder与BCrypt bean不一致——同一应用两套密码逻辑", severity: "red" },
+      { text: "CORS配置缺失：无CorsConfigurationSource，前端预检必失败", severity: "red" },
+      { text: "Collectors.toList() Java 16+废弃，语义与toList()不同", severity: "yellow" },
+      { text: "Double-Checked Locking不加volatile返回半构造对象", severity: "red" },
+      { text: "Swift串行await逐个等待丢失并发性，Task内存泄漏", severity: "red" },
+      { text: "ScopedValue.where()绑定不传播到ExecutorService线程池", severity: "red" },
+      { text: "跨语言并发上下文传递：ScopedValue/Task-local/context.Context本质同构", severity: "green" }
+    ],
+    links: {
+      md: "days/2026-05-10.md",
+      html: "days/2026-05-10-presentation.html"
+    }
   }
 ];
 
