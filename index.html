@@ -1,1201 +1,673 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Code Review Daily | 每日代码审查练习</title>
-  <!-- marked.js for markdown rendering -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
-  <!-- highlight.js for code highlighting (VS Code Dark+ style) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/vs2015.min.css">
-  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
-  <style>
-    :root {
-      --bg-primary: #1e1e2e;
-      --bg-secondary: #181825;
-      --bg-card: #252540;
-      --bg-card-hover: #2a2a4a;
-      --border: #313244;
-      --text-primary: #cdd6f4;
-      --text-secondary: #a6adc8;
-      --text-muted: #6c7086;
-      --accent-blue: #89b4fa;
-      --accent-green: #a6e3a1;
-      --accent-red: #f38ba8;
-      --accent-yellow: #f9e2af;
-      --accent-purple: #cba6f7;
-      --accent-peach: #fab387;
-      --accent-teal: #94e2d5;
-      --radius: 12px;
-      --shadow: 0 4px 24px rgba(0,0,0,0.3);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'JetBrains Mono', 'Fira Code', monospace, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      line-height: 1.6;
-      min-height: 100vh;
-    }
-    .hero {
-      text-align: center;
-      padding: 3rem 1.5rem 2rem;
-      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-      border-bottom: 1px solid var(--border);
-    }
-    .hero h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .hero p { color: var(--text-secondary); margin-top: 0.5rem; font-size: 1.05rem; }
-    .hero .emoji-row { margin-top: 1rem; font-size: 1.5rem; letter-spacing: 0.5rem; }
-    .stats-bar { display: flex; justify-content: center; gap: 1.5rem; padding: 2rem 1.5rem; flex-wrap: wrap; }
-    .stat-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1.2rem 2rem; text-align: center; min-width: 140px;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .stat-card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
-    .stat-number { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .stat-number.blue { color: var(--accent-blue); }
-    .stat-number.green { color: var(--accent-green); }
-    .stat-number.purple { color: var(--accent-purple); }
-    .stat-label { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem; }
-    .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem 4rem; }
-    .section-title {
-      font-size: 1.4rem; font-weight: 700; margin: 2.5rem 0 1rem;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-    .section-title .icon { font-size: 1.3rem; }
-    .day-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1.5rem; margin-bottom: 1rem;
-      transition: border-color 0.25s, transform 0.2s;
-    }
-    .day-card:hover { border-color: var(--accent-blue); transform: translateY(-1px); }
-    .day-card .card-header { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-    .day-badge {
-      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px;
-      padding: 0.2rem 0.7rem; font-size: 0.8rem; font-weight: 700;
-      color: var(--accent-peach); font-variant-numeric: tabular-nums;
-    }
-    .lang-tag {
-      font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem;
-      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .lang-tag.js     { background: rgba(249,226,175,0.15); color: var(--accent-yellow); }
-    .lang-tag.python { background: rgba(137,180,250,0.15); color: var(--accent-blue); }
-    .lang-tag.swift  { background: rgba(243,139,168,0.15); color: var(--accent-red); }
-    .lang-tag.go     { background: rgba(166,227,161,0.15); color: var(--accent-green); }
-    .lang-tag.rust   { background: rgba(203,166,247,0.15); color: var(--accent-purple); }
-    .lang-tag.java   { background: rgba(250,179,135,0.15); color: var(--accent-peach); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代码审查练习 · 索引</title>
+<style>
+/* ===== VS Code Dark+ 配色 ===== */
+:root {
+  --bg-primary:    #1e1e1e;
+  --bg-secondary:  #252526;
+  --bg-card:       #2d2d2d;
+  --bg-card-hover: #333333;
+  --bg-badge:      #3c3c3c;
+  --border:        #404040;
+  --text-primary:  #d4d4d4;
+  --text-secondary:#9cdcfe;
+  --text-muted:    #808080;
+  --accent-blue:   #569cd6;
+  --accent-green:  #6a9955;
+  --accent-yellow: #dcdcaa;
+  --accent-orange: #ce9178;
+  --accent-purple: #c586c0;
+  --accent-red:    #f44747;
+  --accent-cyan:   #4ec9b0;
+  --link:          #4fc1ff;
+  --link-hover:    #9cdcfe;
+}
 
-    /* ===== Fixed: vertical sample list ===== */
-    .sample-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-    }
-    .sample-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .sample-item .sample-prefix {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      flex-shrink: 0;
-    }
-    .sample-item .sample-name {
-      color: var(--text-primary);
-      font-size: 0.92rem;
-      font-weight: 500;
-    }
-    .sample-item + .sample-item {
-      padding-top: 0.4rem;
-      border-top: 1px dashed rgba(49,50,68,0.7);
-    }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-    .findings { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
-    .finding { font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 0.4rem; }
-    .finding .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 0.45rem; flex-shrink: 0; }
-    .finding .dot.red    { background: var(--accent-red); }
-    .finding .dot.yellow { background: var(--accent-yellow); }
-    .finding .dot.green  { background: var(--accent-green); }
-    .card-links { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-    .card-link {
-      display: inline-flex; align-items: center; gap: 0.35rem;
-      padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.82rem;
-      font-weight: 600; text-decoration: none; transition: background 0.2s, transform 0.15s;
-      cursor: pointer;
-    }
-    .card-link.md {
-      background: rgba(137,180,250,0.12); color: var(--accent-blue);
-      border: 1px solid rgba(137,180,250,0.25);
-    }
-    .card-link.md:hover { background: rgba(137,180,250,0.22); transform: translateY(-1px); }
-    .card-link.html {
-      background: rgba(166,227,161,0.12); color: var(--accent-green);
-      border: 1px solid rgba(166,227,161,0.25);
-    }
-    .card-link.html:hover { background: rgba(166,227,161,0.22); transform: translateY(-1px); }
-    .pattern-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    @media (max-width: 600px) { .pattern-cards { grid-template-columns: 1fr; } }
-    .pattern-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1.5rem; text-decoration: none; transition: border-color 0.25s, transform 0.2s;
-      cursor: pointer;
-    }
-    .pattern-card:hover { border-color: var(--accent-purple); transform: translateY(-2px); }
-    .pattern-card .pc-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .pattern-card .pc-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
-    .pattern-card .pc-desc { font-size: 0.85rem; color: var(--text-muted); }
-    .pattern-card .pc-count {
-      display: inline-block; margin-top: 0.6rem; font-size: 0.75rem;
-      font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;
-    }
-    .pattern-card .pc-count.review { background: rgba(243,139,168,0.12); color: var(--accent-red); }
-    .pattern-card .pc-count.arch   { background: rgba(203,166,247,0.12); color: var(--accent-purple); }
-    footer {
-      text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border);
-      color: var(--text-muted); font-size: 0.8rem;
-    }
-    footer a { color: var(--accent-blue); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 1.6rem; }
-      .stats-bar { gap: 0.75rem; }
-      .stat-card { min-width: 100px; padding: 0.8rem 1rem; }
-      .stat-number { font-size: 1.5rem; }
-      .day-card { padding: 1rem; }
-    }
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
 
-    /* ===========================
-       Reader View Styles
-       =========================== */
-    #homeView { transition: opacity 0.2s; }
-    #readerView {
-      display: none;
-      min-height: 100vh;
-    }
-    .reader-topbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(24,24,37,0.92);
-      border-bottom: 1px solid var(--border);
-      padding: 0.75rem 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      backdrop-filter: blur(8px);
-    }
-    .btn-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.45rem 1rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      background: rgba(137,180,250,0.12);
-      color: var(--accent-blue);
-      border: 1px solid rgba(137,180,250,0.25);
-      cursor: pointer;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .btn-back:hover { background: rgba(137,180,250,0.25); }
-    .reader-topbar .topbar-title {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .reader-body {
-      display: flex;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
-      gap: 2rem;
-    }
-    .reader-toc {
-      position: sticky;
-      top: 70px;
-      width: 220px;
-      flex-shrink: 0;
-      max-height: calc(100vh - 90px);
-      overflow-y: auto;
-      font-size: 0.82rem;
-      line-height: 1.8;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-    .reader-toc .toc-title {
-      font-weight: 700;
-      color: var(--accent-purple);
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-      letter-spacing: 0.02em;
-    }
-    .reader-toc ul { list-style: none; padding-left: 0; }
-    .reader-toc li { margin-bottom: 2px; }
-    .reader-toc a {
-      color: var(--text-muted);
-      text-decoration: none;
-      display: block;
-      padding: 0.1rem 0.4rem;
-      border-radius: 4px;
-      transition: color 0.15s, background 0.15s;
-    }
-    .reader-toc a:hover {
-      color: var(--accent-blue);
-      background: rgba(137,180,250,0.08);
-    }
-    .reader-toc a.active {
-      color: var(--accent-blue);
-      background: rgba(137,180,250,0.12);
-      font-weight: 600;
-    }
-    .reader-toc .toc-h2 { padding-left: 0; }
-    .reader-toc .toc-h3 { padding-left: 1rem; }
-    .reader-toc .toc-h4 { padding-left: 2rem; }
-    .reader-content {
-      flex: 1;
-      min-width: 0;
-      max-width: 900px;
-    }
+/* ===== 顶部导航 ===== */
+.top-bar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.top-bar .icon { font-size: 20px; }
+.top-bar h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-yellow);
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
 
-    /* ===========================
-       Markdown Rendered Content
-       =========================== */
-    .md-body {
-      color: var(--text-primary);
-      line-height: 1.75;
-      font-size: 0.95rem;
-    }
-    .md-body h1 {
-      font-size: 1.8rem;
-      font-weight: 800;
-      margin: 2rem 0 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid var(--border);
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .md-body h2 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      margin: 1.8rem 0 0.8rem;
-      padding-bottom: 0.35rem;
-      border-bottom: 1px solid var(--border);
-      color: var(--accent-blue);
-    }
-    .md-body h3 {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin: 1.5rem 0 0.6rem;
-      color: var(--accent-purple);
-    }
-    .md-body h4 {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin: 1.2rem 0 0.5rem;
-      color: var(--accent-peach);
-    }
-    .md-body h5, .md-body h6 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin: 1rem 0 0.4rem;
-      color: var(--accent-teal);
-    }
-    .md-body p { margin: 0.8rem 0; }
-    .md-body a {
-      color: var(--accent-blue);
-      text-decoration: none;
-      border-bottom: 1px solid rgba(137,180,250,0.3);
-      transition: border-color 0.2s;
-    }
-    .md-body a:hover { border-bottom-color: var(--accent-blue); }
-    .md-body strong { color: var(--accent-yellow); font-weight: 700; }
-    .md-body em { color: var(--accent-teal); font-style: italic; }
-    .md-body ul, .md-body ol { padding-left: 1.8rem; margin: 0.6rem 0; }
-    .md-body li { margin: 0.3rem 0; }
-    .md-body li::marker { color: var(--accent-blue); }
-    .md-body blockquote {
-      margin: 1rem 0;
-      padding: 0.8rem 1.2rem;
-      border-left: 4px solid var(--accent-purple);
-      background: rgba(203,166,247,0.06);
-      border-radius: 0 8px 8px 0;
-      color: var(--text-secondary);
-    }
-    .md-body blockquote p { margin: 0.3rem 0; }
-    .md-body code {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-      background: rgba(137,180,250,0.1);
-      color: var(--accent-peach);
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-      font-size: 0.88em;
-    }
-    .md-body pre {
-      margin: 1rem 0;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-      position: relative;
-    }
-    .md-body pre code {
-      display: block;
-      padding: 1rem 1.2rem;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      overflow-x: auto;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      border-radius: 0;
-    }
-    .md-body pre code.hljs {
-      background: #1e1e1e;
-      padding: 1rem 1.2rem;
-    }
-    .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
-    .md-body table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1rem 0;
-      font-size: 0.9rem;
-    }
-    .md-body thead th {
-      background: var(--bg-secondary);
-      color: var(--accent-blue);
-      font-weight: 700;
-      text-align: left;
-      padding: 0.65rem 0.9rem;
-      border: 1px solid var(--border);
-    }
-    .md-body tbody td {
-      padding: 0.55rem 0.9rem;
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-    }
-    .md-body tbody tr:hover { background: rgba(137,180,250,0.04); }
-    .md-body img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); }
-    .md-body .hljs { background: #1e1e1e !important; }
+/* ===== 统计栏 ===== */
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+  flex-wrap: wrap;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 24px;
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--accent-blue); }
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  line-height: 1.2;
+}
+.stat-number.blue   { color: var(--accent-blue); }
+.stat-number.green  { color: var(--accent-green); }
+.stat-number.purple { color: var(--accent-purple); }
+.stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
 
-    /* Loading state */
-    .reader-loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 4rem;
-      color: var(--text-muted);
-      font-size: 1.1rem;
-    }
-    .reader-loading .spinner {
-      width: 24px; height: 24px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent-blue);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 0.75rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .reader-error {
-      text-align: center;
-      padding: 4rem 1.5rem;
-      color: var(--accent-red);
-    }
-    .reader-error .error-icon { font-size: 3rem; margin-bottom: 1rem; }
+/* ===== 主体内容 ===== */
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
+}
 
-    /* Mobile responsive for reader */
-    @media (max-width: 768px) {
-      .reader-toc { display: none; }
-      .reader-body { padding: 1rem 1rem 3rem; }
-      .reader-content { max-width: 100%; }
-      .md-body h1 { font-size: 1.4rem; }
-      .md-body h2 { font-size: 1.2rem; }
-      .md-body h3 { font-size: 1.05rem; }
-      .md-body pre code { font-size: 0.8rem; padding: 0.8rem; }
-    }
-  
-    /* ===========================
-       Calendar View Styles
-       =========================== */
-    .calendar-section {
-      margin-bottom: 2rem;
-    }
-    .calendar-nav {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1.5rem;
-      margin-bottom: 1rem;
-      user-select: none;
-    }
-    .calendar-nav .nav-arrow {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: background 0.2s, border-color 0.2s, color 0.2s;
-    }
-    .calendar-nav .nav-arrow:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--accent-blue);
-      color: var(--accent-blue);
-    }
-    .calendar-nav .month-label {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      min-width: 140px;
-      text-align: center;
-    }
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px;
-    }
-    .calendar-grid .weekday-header {
-      text-align: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      padding: 6px 0 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .calendar-grid .day-cell {
-      position: relative;
-      text-align: center;
-      padding: 8px 2px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      color: var(--text-secondary);
-      cursor: default;
-      transition: background 0.2s, color 0.2s;
-      min-height: 42px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .calendar-grid .day-cell.other-month {
-      color: var(--text-muted);
-      opacity: 0.4;
-    }
-    .calendar-grid .day-cell.has-review {
-      color: var(--text-primary);
-      cursor: pointer;
-      background: rgba(137,180,250,0.06);
-      font-weight: 600;
-    }
-    .calendar-grid .day-cell.has-review:hover {
-      background: rgba(137,180,250,0.15);
-    }
-    .calendar-grid .day-cell.has-review.selected {
-      background: rgba(137,180,250,0.22);
-      border: 1px solid rgba(137,180,250,0.4);
-    }
-    .calendar-grid .day-cell.today {
-      color: var(--accent-blue);
-    }
-    .calendar-grid .day-cell .review-dot {
-      position: absolute;
-      bottom: 4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent-blue);
-    }
-    .calendar-grid .day-cell.has-review.selected .review-dot {
-      background: var(--accent-blue);
-      box-shadow: 0 0 6px var(--accent-blue);
-    }
+/* ===== 分区标题 ===== */
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-green);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 28px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .comment { color: var(--accent-green); font-family: monospace; }
 
-    /* Day detail card */
-    .day-detail-card {
-      margin-top: 1rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      animation: fadeInUp 0.25s ease;
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .day-detail-card .detail-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.75rem;
-    }
-    .day-detail-card .detail-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .day-detail-card .detail-date {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-    .day-detail-card .detail-samples {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      margin-bottom: 0.75rem;
-    }
-    .day-detail-card .detail-sample-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .day-detail-card .detail-sample-prefix {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-    .day-detail-card .detail-sample-name {
-      color: var(--text-primary);
-      font-size: 0.92rem;
-      font-weight: 500;
-    }
-    .day-detail-card .detail-findings {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      margin-bottom: 1rem;
-    }
-    .day-detail-card .detail-finding {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: flex-start;
-      gap: 0.4rem;
-    }
-    .day-detail-card .detail-finding .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      margin-top: 0.45rem;
-      flex-shrink: 0;
-    }
-    .day-detail-card .detail-finding .dot.red    { background: var(--accent-red); }
-    .day-detail-card .detail-finding .dot.yellow { background: var(--accent-yellow); }
-    .day-detail-card .detail-finding .dot.green  { background: var(--accent-green); }
-    .day-detail-card .detail-links {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
+/* ===== 审查日卡片 ===== */
+.review-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  transition: border-color 0.2s, transform 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  color: inherit;
+}
+.review-card:hover {
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+}
+.review-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.review-card-header .day-tag {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Cascadia Code', monospace;
+  color: var(--accent-yellow);
+}
+.review-card-header .date {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+.lang-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+  line-height: 1.5;
+}
+.lang-js    { background: #f0db4f; color: #323330; }
+.lang-py    { background: #3776ab; }
+.lang-swift { background: #f05138; }
+.lang-go    { background: #00add8; color: #1a1a1a; }
+.lang-rust  { background: #dea584; color: #1a1a1a; }
 
-    /* Mobile responsive for calendar */
-    @media (max-width: 600px) {
-      .calendar-grid {
-        gap: 2px;
-        padding: 4px;
-      }
-      .calendar-grid .day-cell {
-        padding: 6px 0;
-        font-size: 0.78rem;
-        min-height: 36px;
-      }
-      .calendar-grid .weekday-header {
-        font-size: 0.65rem;
-      }
-      .calendar-nav .month-label {
-        font-size: 1rem;
-      }
-    }
+.sample-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.sample-name::before {
+  content: '▸ ';
+  color: var(--accent-blue);
+}
+
+.findings {
+  list-style: none;
+  padding: 0;
+}
+.findings li {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+.findings li::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: var(--accent-red);
+  font-weight: bold;
+}
+.findings li.good::before {
+  content: '✓';
+  color: var(--accent-green);
+}
+.findings li.warn::before {
+  content: '⚠';
+  color: var(--accent-orange);
+}
+
+.card-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.card-link {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--link);
+  text-decoration: none;
+  padding: 3px 10px;
+  background: var(--bg-badge);
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+.card-link:hover {
+  background: var(--accent-blue);
+  color: #fff;
+}
+
+/* ===== 模式库卡片 ===== */
+.pattern-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.pattern-card:hover {
+  border-color: var(--accent-purple);
+  transform: translateY(-2px);
+}
+.pattern-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+.pattern-info { flex: 1; }
+.pattern-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.pattern-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.pattern-count {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'Cascadia Code', monospace;
+  color: var(--accent-purple);
+  flex-shrink: 0;
+}
+.pattern-count span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ===== 演示文稿卡片 ===== */
+.presentation-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 24px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.presentation-card:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+}
+.pres-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.pres-info { flex: 1; }
+.pres-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.pres-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+.pres-arrow {
+  font-size: 18px;
+  color: var(--accent-cyan);
+  transition: transform 0.2s;
+}
+.presentation-card:hover .pres-arrow {
+  transform: translateX(4px);
+}
+
+/* ===== 页脚 ===== */
+.footer {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+.footer code {
+  color: var(--accent-green);
+  font-family: 'Cascadia Code', monospace;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+  .top-bar { padding: 10px 16px; }
+  .stats-bar { padding: 14px 16px; gap: 10px; }
+  .stat-card { padding: 12px 16px; min-width: 100px; }
+  .stat-number { font-size: 24px; }
+  .container { padding: 0 16px 30px; }
+  .review-card { padding: 16px; }
+  .review-card-header { gap: 6px; }
+  .pattern-card { flex-direction: column; text-align: center; }
+}
 </style>
 </head>
 <body>
 
-<!-- ===== Home View ===== -->
-<div id="homeView">
-  <div class="hero">
-    <h1>🔍 Code Review Daily</h1>
-    <p>每日代码审查与架构练习 | Daily Code Review & Architecture Practice</p>
-    <div class="emoji-row">🧠 🔬 🏗️ 🛡️</div>
-  </div>
-
-  <div class="stats-bar" id="statsBar"></div>
-
-  <div class="container">
-    <div class="calendar-section">
-      <div class="section-title"><span class="icon">📅</span> 审查日历</div>
-      <div class="calendar-nav">
-        <span class="nav-arrow" onclick="calNav(-1)">◀</span>
-        <span class="month-label" id="calMonthLabel"></span>
-        <span class="nav-arrow" onclick="calNav(1)">▶</span>
-      </div>
-      <div class="calendar-grid" id="calGrid"></div>
-      <div id="calDetail"></div>
-    </div>
-
-    <div class="section-title" onclick="toggleDayCards()" style="cursor:pointer;user-select:none"><span class="icon">📋</span> 全部审查记录 <span id="toggleIcon" style="font-size:0.7em;color:var(--text-muted)">▶ 展开</span></div>
-    <div id="dayCards" style="display:none"></div>
-
-    <div class="section-title"><span class="icon">📚</span> 模式库</div>
-    <div class="pattern-cards">
-      <div class="pattern-card" onclick="openReader('patterns/%E5%AE%A1%E6%9F%A5%E6%A8%A1%E5%BC%8F%E5%BA%93.md')">
-        <div class="pc-icon">🔎</div>
-        <div class="pc-title">审查模式库</div>
-        <div class="pc-desc">AI 代码常见问题模式，审查时快速识别</div>
-        <span class="pc-count review" id="reviewPatternCount"></span>
-      </div>
-      <div class="pattern-card" onclick="openReader('patterns/%E6%9E%B6%E6%9E%84%E6%A8%A1%E5%BC%8F%E5%BA%93.md')">
-        <div class="pc-icon">🏗️</div>
-        <div class="pc-title">架构模式库</div>
-        <div class="pc-desc">好设计与坏设计片段，架构学习与审查参考</div>
-        <span class="pc-count arch" id="archPatternCount"></span>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    Built with ❤️ &nbsp;|&nbsp; <a href="https://github.com/NaviLych/code-review-daily">GitHub Repo</a>
-  </footer>
+<!-- 顶部导航 -->
+<div class="top-bar">
+  <span class="icon">🔍</span>
+  <h1>Code Review Practice</h1>
 </div>
 
-<!-- ===== Reader View ===== -->
-<div id="readerView">
-  <div class="reader-topbar">
-    <a class="btn-back" onclick="goHome()">← 返回首页</a>
-    <span class="topbar-title" id="topbarTitle"></span>
-  </div>
-  <div class="reader-body">
-    <nav class="reader-toc" id="readerToc">
-      <div class="toc-title">📑 目录</div>
-      <ul id="tocList"></ul>
-    </nav>
-    <div class="reader-content">
-      <div class="md-body" id="mdContent">
-        <div class="reader-loading">
-          <div class="spinner"></div>
-          加载中...
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- 统计栏 -->
+<div class="stats-bar" id="stats"></div>
 
-<!-- ===================================================================
-     数据层 — 修改以下 JS 数组即可新增条目
+<!-- 主体 -->
+<div class="container" id="main"></div>
 
-     📌 如何添加新一天的审查记录：
-     1. 在 days 数组末尾追加一个新对象
-     2. 必填字段：date, dayNumber, samples, findings, links
-     3. links.md 和 links.html 填相对路径（从仓库根目录算起）
-     4. 如果当天没有 html 演示文稿，links.html 设为 null
-     5. 页面会自动更新统计数字和卡片列表
-     =================================================================== -->
+<!-- 页脚 -->
+<div class="footer" id="footer"></div>
+
 <script>
-const REVIEW_PATTERN_COUNT = 23;
-const ARCH_PATTERN_COUNT   = 12;
+// =====================================================================
+// 📌 数据配置区 —— 新增审查日只需在对应数组中追加对象即可
+// =====================================================================
 
-const days = [
+/**
+ * 审查日列表（按时间倒序，最新的在最前）
+ *
+ * 🆕 如何添加新的一天？
+ * 1. 复制一个已有条目，修改以下字段：
+ *    - day:    "Day3"
+ *    - date:   "2026-05-08"
+ *    - focus:  今日审查主题一句话
+ *    - samples: 数组，每个元素代表一个审查样本
+ *        - name:   样本名称
+ *        - langs:  语言标签数组，对应 lang-xxx 的 CSS class
+ *                  支持: js, py, swift, go, rust, java, ts, c
+ *        - findings: 关键发现，2-3 条。加 {good:true} 为好设计标记，
+ *                    加 {warn:true} 为警告标记
+ *    - md:     审查笔记的 md 文件路径
+ *    - html:   演示文稿的 html 文件路径（可选）
+ * 2. 保存文件，刷新页面即可
+ */
+const reviewDays = [
   {
-    date: "2026-05-06",
-    dayNumber: 1,
+    day: "Day3",
+    date: "2026-05-10",
+    focus: "并发陷阱：Java DCL & Swift async/await",
     samples: [
-      { name: "React UserList 性能陷阱", lang: "js" },
-      { name: "Claude Code LiteLLM Fallback Bug", lang: "python" }
+      {
+        name: "Java DCL & Boolean 锁陷阱",
+        langs: ["java"],
+        findings: [
+          "DCL 无 volatile → 部分构造对象可见",
+          "Boolean.FALSE 作为锁与所有缓存用户共享 → 潜在死锁",
+          "✅ 修复：synchronized 方法或 Holder 模式"
+        ]
+      },
+      {
+        name: "Swift async/await 并发三陷阱",
+        langs: ["swift"],
+        findings: [
+          "串行 await vs 并行 async let 性能差异 3x",
+          "Task 隐式捕获 self + 无限序列 → 内存泄漏",
+          "Task.detached 脱离 @MainActor 上下文增加复杂度"
+        ]
+      },
+      {
+        name: "Java 25 ScopedValue 新特性误用",
+        langs: ["java"],
+        findings: [
+          "⚠ ScopedValue 绑定不传播到 ExecutorService 线程",
+          "⚠ .where() 结果未消费，绑定从未激活",
+          "✅ 修复：使用 StructuredTaskScope 创建子任务"
+        ]
+      },
+      {
+        name: "跨语言并发设计智慧",
+        langs: ["java", "swift", "go"],
+        findings: [
+          {good:true, text:"结构化并发优于 ad-hoc 任务管理"},
+          {good:true, text:"轻量级并发 ≠ 自动线程安全"},
+          {good:true, text:"上下文传递需要显式机制"}
+        ]
+      }
     ],
-    findings: [
-      { text: "每次渲染触发 O(n·logn) 完整计算，缺少 useMemo 缓存", severity: "red" },
-      { text: "LiteLLM drop_params 只删除不支持的参数名，不删除不支持的参数值", severity: "red" },
-      { text: "AI 假设外部库行为未验证，'看起来合理'≠实际行为", severity: "yellow" }
-    ],
-    links: {
-      md: "days/2026-05-06.md",
-      html: null
-    }
+    md: "20260510.md",
+    html: "2026-05-10-presentation.html"
   },
   {
+    day: "Day2",
     date: "2026-05-07",
-    dayNumber: 2,
+    focus: "异步生命周期管理",
     samples: [
-      { name: "Swift async/await Continuation 泄漏", lang: "swift" },
-      { name: "Go errgroup 结构化并发", lang: "go" },
-      { name: "Rust Rc 循环引用 & Weak", lang: "rust" }
+      {
+        name: "Swift async/await Continuation 泄漏",
+        langs: ["swift"],
+        findings: [
+          "失败路径未 resume continuation → 永久挂起",
+          "Task 取消与超时均未处理，delegate 保留环隐患",
+          "✅ 修复：所有路径 resume + weak delegate + withTaskCancellationHandler"
+        ]
+      },
+      {
+        name: "Go errgroup 结构化并发（好设计）",
+        langs: ["go"],
+        findings: [
+          {good:true, text:"WithContext 传播取消信号，任一失败全部取消"},
+          {good:true, text:"SetLimit 控制并发上限，防止资源耗尽"},
+          "⚠ 无并发限制时 fan-out 可能打爆下游"
+        ]
+      },
+      {
+        name: "Rust Rc 循环引用与 Weak 打破循环",
+        langs: ["rust"],
+        findings: [
+          "Rc/Arc 循环引用绕过编译检查，引用计数永不归零",
+          "Weak<T> 打破循环是必须的，编译器无法自动推断",
+          "RefCell 运行时 borrow 冲突是另一类隐患"
+        ]
+      }
     ],
-    findings: [
-      { text: "Swift continuation 失败路径遗漏 resume → 永久挂起泄漏", severity: "red" },
-      { text: "Go errgroup 体现结构化并发：所有子任务生命周期被 group 管理", severity: "green" },
-      { text: "Rust Rc 循环引用绕过所有权检查，需 Weak 打破循环", severity: "yellow" }
-    ],
-    links: {
-      md: "days/2026-05-07.md",
-      html: "days/2026-05-07-presentation.html"
-    }
+    md: "2026-05-07.md",
+    html: "2026-05-07-presentation.html"
   },
   {
-    date: "2026-05-08",
-    dayNumber: 3,
+    day: "Day1",
+    date: "2026-05-06",
+    focus: "AI 生成代码的典型陷阱",
     samples: [
-      { name: "Spring Boot @Transactional 静默失败", lang: "java" }
+      {
+        name: "React UserList 组件（AI 生成）",
+        langs: ["js"],
+        findings: [
+          "每次渲染触发 O(n·logn) 全量计算，缺少 useMemo",
+          "[...filteredUsers].sort() 中 spread 拷贝多余",
+          "缺少防抖、分页、虚拟列表"
+        ]
+      },
+      {
+        name: "Claude Code LiteLLM Fallback（真实生产 Bug）",
+        langs: ["py"],
+        findings: [
+          "假设 drop_params=True 会删除参数值，实际只删参数名 → no-op",
+          "未验证外部库 MINIMUM_PROMPT_CACHE_TOKEN_COUNT 常量",
+          "Runtime 失败，AI 仍声明\"任务完成\""
+        ]
+      }
     ],
-    findings: [
-      { text: "checked异常默认提交事务——钱可以无声消失", severity: "red" },
-      { text: "REQUIRES_NEW死锁：HikariCP连接耗尽无异常", severity: "red" },
-      { text: "三段式事务架构：校验前置→DB事务化→副作用AFTER_COMMIT", severity: "green" }
-    ],
-    links: {
-      md: "days/2026-05-08.md",
-      html: "days/2026-05-08-presentation.html"
-    }
-  },
-  {
-    date: "2026-05-09",
-    dayNumber: 4,
-    samples: [
-      { name: "synchronized集合迭代删除 (Payment Gateway)", lang: "java" },
-      { name: "Virtual Thread synchronized Pinning (Transfer)", lang: "java" },
-      { name: "双重检查锁定缺volatile (Risk Engine)", lang: "java" },
-      { name: "价值类对象作锁 Boolean/Integer (Settlement)", lang: "java" },
-      { name: "StructuredTaskScope缺join (Batch Pay)", lang: "java" },
-      { name: "CompletableFuture异常吞噬 (Query)", lang: "java" },
-      { name: "锁内Thread.sleep死锁 (Confirm)", lang: "java" }
-    ],
-    findings: [
-      { text: "synchronizedList迭代+删除: ConcurrentModificationException", severity: "red" },
-      { text: "synchronized方法+IO: Virtual Thread pinning, 50→500 TPS", severity: "red" },
-      { text: "双重检查锁定缺volatile: 返回半构造对象, 风控规则可能完全失效", severity: "red" },
-      { text: "Boolean/Integer作锁: JVM全局缓存, 与第三方库死锁", severity: "red" },
-      { text: "StructuredTaskScope缺join: 僵尸线程+ArrayList并发写", severity: "red" },
-      { text: "CompletableFuture无handle/timeout: 异常被静默吞噬", severity: "red" },
-      { text: "锁内sleep不释放monitor: wait/notify才是正确模式", severity: "red" },
-      { text: "ReentrantLock+tryLock超时+锁排序: 转账10倍性能提升", severity: "green" }
-    ],
-    links: {
-      md: "days/2026-05-09.md",
-      html: "days/2026-05-09-presentation.html"
-    }
+    md: "2026-05-06.md",
+    html: null
   }
 ];
 
-// ===== Render home page =====
+/**
+ * 模式库列表
+ *
+ * 🆕 如何添加新的模式库？
+ * 追加一个对象：
+ *   - title:   模式库名称
+ *   - icon:    emoji 图标
+ *   - desc:    简短描述
+ *   - count:   当前模式条目数
+ *   - file:    md 文件路径
+ */
+const patternLibs = [
+  {
+    title: "审查模式库",
+    icon: "🔎",
+    desc: "AI 生成代码的常见问题模式，供审查时快速识别",
+    count: 18,
+    file: "审查模式库.md"
+  },
+  {
+    title: "架构模式库",
+    icon: "🏗️",
+    desc: "好设计与坏设计片段，供架构学习和代码审查参考",
+    count: 12,
+    file: "架构模式库.md"
+  }
+];
+
+// =====================================================================
+// 渲染逻辑（一般无需修改）
+// =====================================================================
+
+/** 渲染统计栏 */
 function renderStats() {
-  const totalDays = days.length;
-  document.getElementById('statsBar').innerHTML =
-    '<div class="stat-card"><div class="stat-number blue">' + totalDays + '</div><div class="stat-label">审查天数</div></div>' +
-    '<div class="stat-card"><div class="stat-number green">' + REVIEW_PATTERN_COUNT + '</div><div class="stat-label">审查模式</div></div>' +
-    '<div class="stat-card"><div class="stat-number purple">' + ARCH_PATTERN_COUNT + '</div><div class="stat-label">架构模式</div></div>';
-  document.getElementById('reviewPatternCount').textContent = REVIEW_PATTERN_COUNT + ' 个模式';
-  document.getElementById('archPatternCount').textContent = ARCH_PATTERN_COUNT + ' 个模式';
+  const totalDays = reviewDays.length;
+  const totalPatterns = patternLibs.reduce((s, p) => s + p.count, 0);
+  const reviewPatterns = patternLibs.find(p => p.title === "审查模式库")?.count || 0;
+  const archPatterns = patternLibs.find(p => p.title === "架构模式库")?.count || 0;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-number blue">${totalDays}</div>
+      <div class="stat-label">审查天数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number green">${reviewPatterns}</div>
+      <div class="stat-label">审查模式</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number purple">${archPatterns}</div>
+      <div class="stat-label">架构模式</div>
+    </div>
+  `;
 }
 
-function langTag(lang) {
+/** 渲染语言 badge */
+function langBadge(lang) {
   const map = {
-    js:     { label: 'JavaScript', cls: 'js' },
-    python: { label: 'Python',     cls: 'python' },
-    swift:  { label: 'Swift',      cls: 'swift' },
-    go:     { label: 'Go',         cls: 'go' },
-    rust:   { label: 'Rust',       cls: 'rust' },
-    java:   { label: 'Java',       cls: 'java' },
+    js: ['JavaScript', 'lang-js'],
+    py: ['Python', 'lang-py'],
+    swift: ['Swift', 'lang-swift'],
+    go: ['Go', 'lang-go'],
+    rust: ['Rust', 'lang-rust'],
+    java: ['Java', 'lang-py'],
+    ts: ['TypeScript', 'lang-js'],
+    c: ['C/C++', 'lang-go']
   };
-  const info = map[lang] || { label: lang, cls: '' };
-  return '<span class="lang-tag ' + info.cls + '">' + info.label + '</span>';
+  const [label, cls] = map[lang] || [lang, ''];
+  return `<span class="lang-badge ${cls}">${label}</span>`;
 }
 
-function renderDays() {
-  const container = document.getElementById('dayCards');
-  container.innerHTML = days.map(function(d) {
-    // FIX: vertical sample list — each sample on its own line
-    var sampleHTML = d.samples.map(function(s) {
-      return '<div class="sample-item">' +
-        '<span class="sample-prefix">▸</span>' +
-        '<span class="sample-name">' + s.name + '</span>' +
-        langTag(s.lang) +
-        '</div>';
-    }).join('');
-
-    var findingHTML = d.findings.map(function(f) {
-      return '<div class="finding"><span class="dot ' + f.severity + '"></span><span>' + f.text + '</span></div>';
-    }).join('');
-
-    var mdLink = '<a class="card-link md" onclick="openReader(\'' + d.links.md + '\'); return false;">📝 MD 笔记</a>';
-    var htmlLink = d.links.html ? '<a class="card-link html" href="' + d.links.html + '">🖥️ HTML 演示</a>' : '';
-
-    return '<div class="day-card">' +
-      '<div class="card-header"><span class="day-badge">Day ' + d.dayNumber + '</span>' +
-      '<span style="color:var(--text-muted);font-size:0.82rem;">' + d.date + '</span></div>' +
-      '<div class="sample-list">' + sampleHTML + '</div>' +
-      '<div class="findings">' + findingHTML + '</div>' +
-      '<div class="card-links">' + mdLink + htmlLink + '</div></div>';
-  }).join('');
-}
-
-renderStats();
-renderDays();
-
-// ===== Marked.js configuration =====
-// marked v15+ no longer supports highlight in setOptions
-// Use marked.use() with markedHighlight extension, or do manual post-processing
-marked.setOptions({
-  breaks: true,
-  gfm: true
-});
-
-// ===== Hash Router =====
-function getHashRoute() {
-  var hash = window.location.hash;
-  if (!hash || hash === '#') return null;
-  return hash.substring(1);
-}
-
-function hashToPath(route) {
-  if (!route) return null;
-  if (route.startsWith('day/')) {
-    return 'days/' + route.substring(4) + '.md';
+/** 渲染单条发现 */
+function renderFinding(f) {
+  if (typeof f === 'string') {
+    return `<li>${f}</li>`;
   }
-  if (route.startsWith('patterns/')) {
-    return 'patterns/' + route.substring(9) + '.md';
-  }
-  if (route.startsWith('md/')) {
-    return route.substring(3);
-  }
-  return route;
+  const cls = f.good ? 'good' : f.warn ? 'warn' : '';
+  return `<li class="${cls}">${f.text || f}</li>`;
 }
 
-function pathToHash(path) {
-  if (path.startsWith('days/')) {
-    return '#day/' + path.replace('days/', '').replace('.md', '');
-  }
-  if (path.startsWith('patterns/')) {
-    return '#patterns/' + path.replace('patterns/', '').replace('.md', '');
-  }
-  return '#md/' + path;
-}
+/** 渲染审查日卡片 */
+function renderReviewDays() {
+  let html = `<div class="section-title"><span class="comment">//</span> 每日审查笔记</div>`;
 
-// ===== Open reader =====
-function openReader(filePath) {
-  var hash = pathToHash(filePath);
-  window.location.hash = hash;
-}
+  reviewDays.forEach(d => {
+    // 收集所有语言
+    const allLangs = [...new Set(d.samples.flatMap(s => s.langs))];
 
-// ===== Go home =====
-function goHome() {
-  window.location.hash = '';
-}
+    let samplesHtml = d.samples.map(s => `
+      <div class="sample-name">${s.name}</div>
+      <ul class="findings">${s.findings.map(renderFinding).join('')}</ul>
+    `).join('');
 
-// ===== Show / Hide views =====
-function showHome() {
-  document.getElementById('homeView').style.display = 'block';
-  document.getElementById('readerView').style.display = 'none';
-  document.title = 'Code Review Daily | 每日代码审查练习';
-}
-
-function showReader() {
-  document.getElementById('homeView').style.display = 'none';
-  document.getElementById('readerView').style.display = 'block';
-}
-
-// ===== Build TOC from rendered HTML =====
-function buildTOC() {
-  var content = document.getElementById('mdContent');
-  var headings = content.querySelectorAll('h1, h2, h3, h4');
-  var tocList = document.getElementById('tocList');
-  tocList.innerHTML = '';
-
-  if (headings.length === 0) {
-    document.getElementById('readerToc').style.display = 'none';
-    return;
-  }
-  document.getElementById('readerToc').style.display = '';
-
-  headings.forEach(function(h, i) {
-    var id = 'toc-heading-' + i;
-    h.id = id;
-    var level = h.tagName.toLowerCase();
-    var li = document.createElement('li');
-    var a = document.createElement('a');
-    a.href = '#' + id;
-    a.textContent = h.textContent;
-    a.className = 'toc-' + level;
-    a.addEventListener('click', function(e) {
-      e.preventDefault();
-      document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    li.appendChild(a);
-    tocList.appendChild(li);
-  });
-
-  // Scroll spy
-  setupScrollSpy(headings);
-}
-
-// ===== Scroll Spy for TOC =====
-var scrollSpyObserver = null;
-function setupScrollSpy(headings) {
-  if (scrollSpyObserver) scrollSpyObserver.disconnect();
-
-  var tocLinks = document.querySelectorAll('#tocList a');
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        tocLinks.forEach(function(l) { l.classList.remove('active'); });
-        var activeLink = document.querySelector('#tocList a[href="#' + entry.target.id + '"]');
-        if (activeLink) activeLink.classList.add('active');
-      }
-    });
-  }, {
-    rootMargin: '-80px 0px -60% 0px',
-    threshold: 0
-  });
-
-  headings.forEach(function(h) { observer.observe(h); });
-  scrollSpyObserver = observer;
-}
-
-// ===== Load and render markdown =====
-function loadAndRenderMD(filePath) {
-  showReader();
-
-  var parts = filePath.split('/');
-  var fileName = parts[parts.length - 1];
-  var displayTitle = decodeURIComponent(fileName.replace('.md', ''));
-  document.getElementById('topbarTitle').textContent = displayTitle;
-  document.title = displayTitle + ' | Code Review Daily';
-
-  var mdContent = document.getElementById('mdContent');
-  mdContent.innerHTML = '<div class="reader-loading"><div class="spinner"></div>加载中...</div>';
-
-  console.log('Loading:', filePath);
-  fetch(filePath)
-    .then(function(resp) {
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      return resp.text();
-    })
-    .then(function(mdText) {
-      console.log('MD loaded, length:', mdText.length);
-      var html;
-      try {
-        if (typeof marked === 'undefined') {
-          throw new Error('marked.js not loaded');
-        }
-        html = marked.parse(mdText);
-        console.log('Rendered HTML length:', html.length);
-      } catch(e) {
-        mdContent.innerHTML = '<div style="color:#f38ba8;padding:2rem;font-size:1.1rem;">⚠️ marked.parse 错误: ' + e.message + '</div>';
-        return;
-      }
-      mdContent.innerHTML = html;
-      // Re-highlight code blocks that marked didn't handle
-      mdContent.querySelectorAll('pre code').forEach(function(block) {
-        hljs.highlightElement(block);
-      });
-      buildTOC();
-    })
-    .catch(function(err) {
-      mdContent.innerHTML = '<div class="reader-error"><div class="error-icon">😵</div><p>加载失败: ' + err.message + '</p><p style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted);">请检查文件路径是否正确</p></div>';
-      document.getElementById('readerToc').style.display = 'none';
-    });
-}
-
-// ===== Handle hash changes =====
-function handleHashChange() {
-  var route = getHashRoute();
-  if (!route) {
-    showHome();
-    return;
-  }
-  var filePath = hashToPath(route);
-  if (filePath) {
-    loadAndRenderMD(filePath);
-  } else {
-    showHome();
-  }
-}
-
-window.addEventListener('hashchange', handleHashChange);
-
-// Handle initial load with hash
-(function() {
-  handleHashChange();
-})();
-
-// ===== Calendar View =====
-var calYear = new Date().getFullYear();
-var calMonth = new Date().getMonth(); // 0-based
-var calSelectedDate = null;
-
-// Build a lookup map: date string -> day data
-function buildDayMap() {
-  var map = {};
-  days.forEach(function(d) { map[d.date] = d; });
-  return map;
-}
-var dayMap = buildDayMap();
-
-function renderCalendar() {
-  var grid = document.getElementById('calGrid');
-  var label = document.getElementById('calMonthLabel');
-
-  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  label.textContent = calYear + '年 ' + monthNames[calMonth];
-
-  var weekdays = ['一','二','三','四','五','六','日'];
-  var html = '';
-  // Weekday headers
-  weekdays.forEach(function(w) {
-    html += '<div class="weekday-header">' + w + '</div>';
-  });
-
-  // First day of the month (0=Sun, 1=Mon, ...)
-  var firstDay = new Date(calYear, calMonth, 1).getDay();
-  // Convert to Mon-first: Mon=0, Tue=1, ..., Sun=6
-  var startOffset = (firstDay + 6) % 7;
-
-  // Days in this month
-  var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-
-  // Previous month days to show
-  var prevMonthDays = new Date(calYear, calMonth, 0).getDate();
-
-  var today = new Date();
-  var todayStr = today.getFullYear() + '-' +
-    String(today.getMonth() + 1).padStart(2, '0') + '-' +
-    String(today.getDate()).padStart(2, '0');
-
-  // Previous month cells
-  for (var i = startOffset - 1; i >= 0; i--) {
-    var dayNum = prevMonthDays - i;
-    html += '<div class="day-cell other-month">' + dayNum + '</div>';
-  }
-
-  // Current month cells
-  for (var d = 1; d <= daysInMonth; d++) {
-    var dateStr = calYear + '-' +
-      String(calMonth + 1).padStart(2, '0') + '-' +
-      String(d).padStart(2, '0');
-    var hasReview = !!dayMap[dateStr];
-    var isToday = (dateStr === todayStr);
-    var isSelected = (dateStr === calSelectedDate);
-
-    var classes = 'day-cell';
-    if (hasReview) classes += ' has-review';
-    if (isToday) classes += ' today';
-    if (isSelected) classes += ' selected';
-
-    var onclick = hasReview ? ' onclick="selectCalendarDate(\'' + dateStr + '\')"' : '';
-
-    html += '<div class="' + classes + '"' + onclick + '>' + d;
-    if (hasReview) {
-      html += '<span class="review-dot"></span>';
+    let linksHtml = '';
+    if (d.md) {
+      linksHtml += `<a class="card-link" href="${d.md}">📝 ${d.md}</a>`;
     }
-    html += '</div>';
-  }
+    if (d.html) {
+      linksHtml += `<a class="card-link" href="${d.html}">🖥 演示文稿</a>`;
+    }
 
-  // Next month cells to fill the last week
-  var totalCells = startOffset + daysInMonth;
-  var remaining = (7 - (totalCells % 7)) % 7;
-  for (var n = 1; n <= remaining; n++) {
-    html += '<div class="day-cell other-month">' + n + '</div>';
-  }
+    html += `
+      <a class="review-card" href="${d.md || '#'}">
+        <div class="review-card-header">
+          <span class="day-tag">${d.day}</span>
+          <span class="date">${d.date}</span>
+          ${allLangs.map(langBadge).join('')}
+        </div>
+        <div style="font-size:13px;color:var(--accent-orange);margin-bottom:10px;">
+          🎯 ${d.focus}
+        </div>
+        ${samplesHtml}
+        <div class="card-footer">${linksHtml}</div>
+      </a>
+    `;
+  });
 
-  grid.innerHTML = html;
+  return html;
 }
 
-function calNav(delta) {
-  calMonth += delta;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  calSelectedDate = null;
-  document.getElementById('calDetail').innerHTML = '';
-  renderCalendar();
+/** 渲染模式库卡片 */
+function renderPatternLibs() {
+  let html = `<div class="section-title"><span class="comment">//</span> 模式库</div>`;
+
+  patternLibs.forEach(p => {
+    html += `
+      <a class="pattern-card" href="${p.file}">
+        <div class="pattern-icon">${p.icon}</div>
+        <div class="pattern-info">
+          <div class="pattern-title">${p.title}</div>
+          <div class="pattern-desc">${p.desc}</div>
+        </div>
+        <div class="pattern-count">${p.count}<span> 条</span></div>
+      </a>
+    `;
+  });
+
+  return html;
 }
 
-function selectCalendarDate(dateStr) {
-  calSelectedDate = dateStr;
-  renderCalendar();
-  renderCalendarDetail(dateStr);
+/** 渲染演示文稿列表 */
+function renderPresentations() {
+  const presentations = reviewDays.filter(d => d.html);
+  if (presentations.length === 0) return '';
+
+  let html = `<div class="section-title"><span class="comment">//</span> 演示文稿</div>`;
+
+  presentations.forEach(d => {
+    html += `
+      <a class="presentation-card" href="${d.html}">
+        <div class="pres-icon">📊</div>
+        <div class="pres-info">
+          <div class="pres-title">${d.day} · ${d.focus}</div>
+          <div class="pres-meta">${d.html}</div>
+        </div>
+        <div class="pres-arrow">→</div>
+      </a>
+    `;
+  });
+
+  return html;
 }
 
-function renderCalendarDetail(dateStr) {
-  var detail = document.getElementById('calDetail');
-  var d = dayMap[dateStr];
-  if (!d) { detail.innerHTML = ''; return; }
-
-  var sampleHTML = d.samples.map(function(s) {
-    return '<div class="detail-sample-item">' +
-      '<span class="detail-sample-prefix">▸</span>' +
-      '<span class="detail-sample-name">' + s.name + '</span>' +
-      langTag(s.lang) +
-      '</div>';
-  }).join('');
-
-  var findingHTML = d.findings.map(function(f) {
-    return '<div class="detail-finding"><span class="dot ' + f.severity + '"></span><span>' + f.text + '</span></div>';
-  }).join('');
-
-  var mdLink = '<a class="card-link md" onclick="openReader(\'' + d.links.md + '\'); return false;">📝 MD 笔记</a>';
-  var htmlLink = d.links.html ? '<a class="card-link html" href="' + d.links.html + '">🖥️ HTML 演示</a>' : '';
-
-  detail.innerHTML = '<div class="day-detail-card">' +
-    '<div class="detail-header">' +
-      '<span class="day-badge">Day ' + d.dayNumber + '</span>' +
-      '<span class="detail-date">' + d.date + '</span>' +
-    '</div>' +
-    '<div class="detail-samples">' + sampleHTML + '</div>' +
-    '<div class="detail-findings">' + findingHTML + '</div>' +
-    '<div class="detail-links">' + mdLink + htmlLink + '</div>' +
-    '</div>';
+/** 渲染页脚 */
+function renderFooter() {
+  const lastDate = reviewDays[0]?.date || '';
+  document.getElementById('footer').innerHTML = `
+    最后更新：<code>${lastDate}</code> · 
+    新增条目只需编辑 <code>&lt;script&gt;</code> 中的 <code>reviewDays</code> 或 <code>patternLibs</code> 数组
+  `;
 }
 
-// Initialize calendar: navigate to the month of the latest review entry
-(function initCalendar() {
-  if (days.length > 0) {
-    var lastDate = days[days.length - 1].date;
-    var parts = lastDate.split('-');
-    calYear = parseInt(parts[0], 10);
-    calMonth = parseInt(parts[1], 10) - 1;
-  }
-  renderCalendar();
+// ===== 初始化 =====
+(function init() {
+  renderStats();
+  const main = document.getElementById('main');
+  main.innerHTML = renderReviewDays() + renderPatternLibs() + renderPresentations();
+  renderFooter();
 })();
-
-
-function toggleDayCards() {
-  var el = document.getElementById('dayCards');
-  var icon = document.getElementById('toggleIcon');
-  if (el.style.display === 'none') {
-    el.style.display = 'block';
-    icon.textContent = '▼ 折叠';
-  } else {
-    el.style.display = 'none';
-    icon.textContent = '▶ 展开';
-  }
-}
 </script>
-
 </body>
 </html>
