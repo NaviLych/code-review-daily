@@ -550,10 +550,30 @@ body {
 </div>
 
 <!-- 统计栏 -->
-<div class="stats-bar" id="stats"></div>
+<div class="stats-bar" id="statsBar"></div>
 
 <!-- 主体 -->
-<div class="container" id="main"></div>
+<div class="container">
+  <div class="calendar-section">
+    <div class="section-title"><span class="icon">📅</span> 审查日历</div>
+    <div class="calendar-nav">
+      <span class="nav-arrow" onclick="calNav(-1)">◀</span>
+      <span class="month-label" id="calMonthLabel"></span>
+      <span class="nav-arrow" onclick="calNav(1)">▶</span>
+    </div>
+    <div class="calendar-grid" id="calGrid"></div>
+    <div id="calDetail"></div>
+  </div>
+
+  <div class="section-title" onclick="toggleDayCards()" style="cursor:pointer;user-select:none"><span class="icon">📋</span> 全部审查记录 <span id="toggleIcon" style="font-size:0.7em;color:var(--text-muted)">▶ 展开</span></div>
+  <div id="dayCards" style="display:none"></div>
+
+  <div class="section-title"><span class="icon">📚</span> 模式库</div>
+  <div id="patternCards"></div>
+
+  <div class="section-title"><span class="icon">🎬</span> 演示文稿</div>
+  <div id="presentationCards"></div>
+</div>
 
 <!-- 页脚 -->
 <div class="footer" id="footer"></div>
@@ -744,7 +764,7 @@ function renderStats() {
   const reviewPatterns = patternLibs.find(p => p.title === "审查模式库")?.count || 0;
   const archPatterns = patternLibs.find(p => p.title === "架构模式库")?.count || 0;
 
-  document.getElementById('stats').innerHTML = `
+  document.getElementById('statsBar').innerHTML = `
     <div class="stat-card">
       <div class="stat-number blue">${totalDays}</div>
       <div class="stat-label">审查天数</div>
@@ -880,9 +900,12 @@ function renderFooter() {
 // ===== 初始化 =====
 (function init() {
   renderStats();
-  const main = document.getElementById('main');
-  main.innerHTML = renderReviewDays() + renderPatternLibs() + renderPresentations();
+  document.getElementById('dayCards').innerHTML = renderReviewDays();
+  document.getElementById('patternCards').innerHTML = renderPatternLibs();
+  document.getElementById('presentationCards').innerHTML = renderPresentations();
   renderFooter();
+  renderCalendar();
+  initCalendar();
 })();
 function renderCalendar() {
   var grid = document.getElementById('calGrid');
@@ -1000,6 +1023,19 @@ function renderCalendarDetail(dateStr) {
 }
 
 // Initialize calendar: navigate to the month of the latest review entry
+
+function toggleDayCards() {
+  var el = document.getElementById('dayCards');
+  var icon = document.getElementById('toggleIcon');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    icon.textContent = '▼ 收起';
+  } else {
+    el.style.display = 'none';
+    icon.textContent = '▶ 展开';
+  }
+}
+
 (function initCalendar() {
   if (days.length > 0) {
     var lastDate = days[days.length - 1].date;
