@@ -382,37 +382,50 @@ const reviewDays = [
   {
     day: "Day3",
     date: "2026-05-10",
-    focus: "并发陷阱：Java DCL & Swift async/await",
+    focus: "AI生成代码的典型缺陷：Spring Security·Stream·并发·Swift async/await·Java 25 ScopedValue",
     samples: [
       {
-        name: "Java DCL & Boolean 锁陷阱",
+        name: "Java/Spring Boot 废弃 API 三陷阱",
         langs: ["java"],
         findings: [
-          "DCL 无 volatile → 部分构造对象可见",
-          "Boolean.FALSE 作为锁与所有缓存用户共享 → 潜在死锁",
-          "✅ 修复：synchronized 方法或 Holder 模式"
+          "⚠ withDefaultPasswordEncoder() 内部 encoder 与 BCrypt bean 不一致",
+          "⚠ CORS 配置缺失：没有 CorsConfigurationSource，前端预检失败",
+          "⚠ WebSecurityConfigurerAdapter / authorizeRequests() / antMatchers() 已废弃",
+          "⚠ Collectors.toList() Java 16+ 废弃，语义与 toList() 不同"
         ]
       },
       {
-        name: "Swift async/await 并发三陷阱",
+        name: "Swift Optional 处理 & KVO 迁移",
         langs: ["swift"],
         findings: [
-          "串行 await vs 并行 async let 性能差异 3x",
-          "Task 隐式捕获 self + 无限序列 → 内存泄漏",
-          "Task.detached 脱离 @MainActor 上下文增加复杂度"
+          "⚠ nil → 空字符串破坏契约：nil = 没用户，\"\" = 有用户没名字",
+          "⚠ UIImage(named:)! 强制解包运行时崩溃",
+          "⚠ 旧式 KVO 未迁移到 @Observable (iOS 17+)",
+          "✅ 修复：保留 Optional 语义 / if let / @Observable"
+        ]
+      },
+      {
+        name: "Java 并发安全 & Swift async/await 陷阱",
+        langs: ["java", "swift"],
+        findings: [
+          "⚠ DCL 无 volatile → JVM 重排序，部分构造对象可见",
+          "⚠ Boolean.FALSE 作为锁与缓存用户共享 → 潜在死锁",
+          "⚠ 串行 await vs 并行 async let 性能差异 3x",
+          "⚠ Task 隐式捕获 self + 无限序列 → 内存泄漏",
+          "⚠ Task.detached 滥用脱离 @MainActor 上下文"
         ]
       },
       {
         name: "Java 25 ScopedValue 新特性误用",
         langs: ["java"],
         findings: [
-          "⚠ ScopedValue 绑定不传播到 ExecutorService 线程",
+          "⚠ ScopedValue 绑定不传播到 ExecutorService 线程 → NoSuchElementException",
           "⚠ .where() 结果未消费，绑定从未激活",
           "✅ 修复：使用 StructuredTaskScope 创建子任务"
         ]
       },
       {
-        name: "跨语言并发设计智慧",
+        name: "跨语言设计智慧",
         langs: ["java", "swift", "go"],
         findings: [
           {good:true, text:"结构化并发优于 ad-hoc 任务管理"},
