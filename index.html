@@ -825,6 +825,26 @@ const days = [
       md: "days/2026-05-10.md",
       html: "days/2026-05-10-presentation.html"
     }
+  },
+  {
+    date: "2026-05-11",
+    dayNumber: 6,
+    samples: [
+      { name: "Swift VIPER 架构设计", lang: "swift" },
+      { name: "React UserList 渲染内重复计算", lang: "js" },
+      { name: "WebSocket 内存泄漏", lang: "js" }
+    ],
+    findings: [
+      { text: "Swift VIPER: 协议抽象+依赖注入，Mock测试轻而易举", severity: "green" },
+      { text: "React useMemo缺失: 每次渲染触发 O(n·logn) 完整重算，1000条数据帧率骤降", severity: "red" },
+      { text: "WebSocket无cleanup: 连接永不关闭，roomId变化时多个连接同时存活", severity: "red" },
+      { text: "AI常见隐瞒点: 不提useMemo、不提cleanup、不提边界条件", severity: "yellow" },
+      { text: "跨语言通用智慧: 资源获取必有释放、计算结果尽量缓存、依赖变化要追踪", severity: "green" }
+    ],
+    links: {
+      md: "days/2026-05-11.md",
+      html: "days/2026-05-11-presentation.html"
+    }
   }
 ];
 

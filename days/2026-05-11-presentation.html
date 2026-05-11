@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码审查练习 Day 1 - 跨语言架构设计</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/src/styles/vs2015.min.css">
+    <style>
+        .reveal .slides { text-align: left; }
+        .reveal .slides section { padding: 20px; }
+        .reveal h1 { font-size: 2em; color: #4fc3f7; }
+        .reveal h2 { font-size: 1.5em; color: #81d4fa; }
+        .reveal h3 { font-size: 1.2em; color: #b3e5fc; }
+        .reveal code { 
+            font-family: 'Fira Code', 'Consolas', monospace; 
+            font-size: 0.85em;
+            background: #1e1e1e;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .reveal pre { 
+            font-size: 0.7em;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .reveal pre code {
+            padding: 15px;
+            background: #1e1e1e;
+        }
+        .highlight-good { border-left: 4px solid #4caf50; }
+        .highlight-bad { border-left: 4px solid #f44336; }
+        .highlight-warn { border-left: 4px solid #ff9800; }
+        .highlight-note { border-left: 4px solid #2196f3; }
+        .tag-good { color: #4caf50; font-weight: bold; }
+        .tag-bad { color: #f44336; font-weight: bold; }
+        .tag-warn { color: #ff9800; font-weight: bold; }
+        .tag-note { color: #2196f3; font-weight: bold; }
+        .two-col { display: flex; gap: 20px; }
+        .two-col > div { flex: 1; }
+        .key-finding { 
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #3d3d3d;
+        }
+        table { 
+            width: 100%; 
+            font-size: 0.7em;
+            border-collapse: collapse;
+        }
+        th, td { 
+            padding: 8px 12px; 
+            text-align: left;
+            border-bottom: 1px solid #3d3d3d;
+        }
+        th { color: #4fc3f7; }
+        tr:nth-child(even) { background: rgba(255,255,255,0.05); }
+        .emoji-icon { font-size: 1.5em; margin-right: 10px; }
+        .slide-title {
+            background: linear-gradient(90deg, #1e88e5 0%, #1565c0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .reveal .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 0.4em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <!-- 封面 -->
+            <section>
+                <h1 class="slide-title">🔍 代码审查练习</h1>
+                <h2>Day 1 - 跨语言架构设计 & 性能反模式</h2>
+                <p style="color: #888;">2026年5月11日</p>
+                <hr style="margin: 30px 0; border-color: #333;">
+                <p>🎯 今日重点：Swift VIPER 好设计 | React 性能反模式 | 跨语言借鉴</p>
+            </section>
+
+            <!-- 审查框架 -->
+            <section>
+                <h2>🧠 4层审查方法</h2>
+                <div class="key-finding">
+                    <h3>第1轮：数据流追踪</h3>
+                    <p>输入从哪来 → 中间变了什么 → 输出到哪去</p>
+                </div>
+                <div class="key-finding">
+                    <h3>第2轮：边界条件</h3>
+                    <p>空值、溢出、并发、异常路径、资源泄漏</p>
+                </div>
+                <div class="key-finding">
+                    <h3>第3轮：必要性审查</h3>
+                    <p>每行代码删掉会怎样？能不能不写？</p>
+                </div>
+                <div class="key-finding highlight-bad">
+                    <h3>反向审：AI生成盲点</h3>
+                    <p>假设这是AI生成的，它最可能隐瞒的3个弱点</p>
+                </div>
+            </section>
+
+            <!-- Swift VIPER 好设计 -->
+            <section>
+                <h2 class="emoji-icon">✅</h2>
+                <h2>好设计：Swift VIPER 架构</h2>
+                <p><span class="tag-note">来源</span> SwiftfulStarterProject</p>
+                <pre><code class="language-swift">// 协议抽象实现依赖解耦 ✅
+protocol UserRepositoryProtocol {
+    func fetchUser(id: String) async throws -> User
+    func updateUser(_ user: User) async throws
+}
+
+// 具体实现可随时替换
+struct FirebaseUserRepository: UserRepositoryProtocol { ... }</code></pre>
+            </section>
+
+            <section>
+                <h2>VIPER 数据流</h2>
+                <pre><code>输入: 用户交互事件
+    ↓
+View (SwiftUI) → Presenter (ViewModel) → Interactor (业务逻辑)
+    ↓
+Router (导航) ← Entity (数据模型)
+    ↓
+输出: UI状态更新 + 导航指令</code></pre>
+                <div class="two-col">
+                    <div class="key-finding highlight-good">
+                        <h3>职责边界</h3>
+                        <ul style="font-size:0.8em">
+                            <li>View: 仅渲染，0逻辑</li>
+                            <li>Presenter: 格式化数据</li>
+                            <li>Interactor: 纯业务</li>
+                        </ul>
+                    </div>
+                    <div class="key-finding highlight-good">
+                        <h3>测试友好</h3>
+                        <ul style="font-size:0.8em">
+                            <li>依赖注入</li>
+                            <li>Mock轻易替换</li>
+                            <li>单元覆盖</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- React 性能反模式 -->
+            <section>
+                <h2 class="emoji-icon">🔴</h2>
+                <h2>反模式：React 渲染内重复计算</h2>
+                <p><span class="tag-bad">来源</span> AI生成代码典型问题</p>
+                <pre><code class="language-javascript">function UserList({ users }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('name');
+  
+  // 🔴 每次渲染都重新计算！
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // 🔴 二次遍历 + 每次创建新数组
+  const sortedUsers = [...filteredUsers].sort((a, b) => { ... });
+  
+  return ( ... );
+}</code></pre>
+            </section>
+
+            <section>
+                <h2>🔴 诊断：数据流问题</h2>
+                <table>
+                    <tr><th>维度</th><th>问题</th></tr>
+                    <tr><td>输入</td><td>键盘输入触发完整重算</td></tr>
+                    <tr><td>中间状态</td><td>filter+sort 双遍历</td></tr>
+                    <tr><td>边界</td><td>空数组未处理、长数组崩溃</td></tr>
+                    <tr><td>AI隐瞒</td><td>不提 useMemo、useDeferredValue</td></tr>
+                </table>
+                <div class="key-finding highlight-bad" style="margin-top:20px">
+                    <p>💡 <strong>性能影响</strong>：1000条数据下，每次输入触发 5-8ms 耗时，打字时帧率骤降</p>
+                </div>
+            </section>
+
+            <!-- 修复方案 -->
+            <section>
+                <h2 class="emoji-icon">✅</h2>
+                <h2>修复：useMemo + useDeferredValue</h2>
+                <pre><code class="language-javascript">function UserList({ users }) {
+  // ✅ useMemo 缓存计算结果
+  const normalizedSearchTerm = useMemo(
+    () => searchTerm.toLowerCase(),
+    [searchTerm]
+  );
+  
+  const processedUsers = useMemo(() => {
+    const filtered = users.filter(user =>
+      user.name.toLowerCase().includes(normalizedSearchTerm)
+    );
+    // ✅ Intl.Collator 提升排序性能
+    const collator = new Intl.Collator('zh-CN');
+    return filtered.sort((a, b) => { ... });
+  }, [users, normalizedSearchTerm, sortField]);
+  
+  // ✅ useDeferredValue 优化输入响应
+  const deferredUsers = useDeferredValue(processedUsers);
+  
+  return ( ... );
+}</code></pre>
+            </section>
+
+            <!-- WebSocket 内存泄漏 -->
+            <section>
+                <h2 class="emoji-icon">🔴</h2>
+                <h2>反模式：WebSocket 内存泄漏</h2>
+                <pre><code class="language-javascript">function ChatRoom({ roomId }) {
+  useEffect(() => {
+    const ws = new WebSocket(`wss://api.example.com/chat/${roomId}`);
+    ws.onmessage = (event) => {
+      setMessages(prev => [...prev, JSON.parse(event.data)]);
+    };
+    // 🔴 没有清理函数！连接永不关闭
+    // 🔴 roomId 变化时旧连接未关闭
+  }, [roomId]);
+}</code></pre>
+                <div class="key-finding highlight-bad">
+                    <p>⚠️ <strong>后果</strong>：组件卸载后连接存活、roomId变化时多个连接同时存在</p>
+                </div>
+            </section>
+
+            <section>
+                <h2>✅ 修复：cleanup 函数</h2>
+                <pre><code class="language-javascript">useEffect(() => {
+  let isMounted = true;
+  let reconnectTimer = null;
+  
+  const connect = () => {
+    const ws = new WebSocket(`wss://api.example.com/chat/${roomId}`);
+    wsRef.current = ws;
+    
+    ws.onclose = () => {
+      if (isMounted) reconnectTimer = setTimeout(connect, 3000);
+    };
+  };
+  
+  connect();
+  
+  // ✅ 清理：关闭连接、取消重连
+  return () => {
+    isMounted = false;
+    clearTimeout(reconnectTimer);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.close();
+    }
+  };
+}, [roomId]);</code></pre>
+            </section>
+
+            <!-- 跨语言对比 -->
+            <section>
+                <h2>🌐 跨语言模式对比</h2>
+                <table>
+                    <tr><th>模式</th><th>Swift</th><th>JavaScript</th><th>Go</th></tr>
+                    <tr><td>协议抽象</td><td>protocol</td><td>interface</td><td>interface</td></tr>
+                    <tr><td>依赖注入</td><td>init + protocol</td><td>constructor</td><td>interface</td></tr>
+                    <tr><td>资源清理</td><td>defer / cleanup</td><td>useEffect return</td><td>defer</td></tr>
+                    <tr><td>响应式取消</td><td>cancellables.store</td><td>unsubscribe()</td><td>context cancel</td></tr>
+                </table>
+            </section>
+
+            <!-- 今日模式库 -->
+            <section>
+                <h2>📚 今日模式库更新</h2>
+                <div class="two-col">
+                    <div>
+                        <h3 style="color:#f44336">🔴 新增反模式</h3>
+                        <ul style="font-size:0.7em">
+                            <li><strong>渲染内重复计算</strong><br/>循环/filter/sort在render内</li>
+                            <li><strong>资源未清理泄漏</strong><br/>useEffect无return</li>
+                            <li><strong>状态闭包捕获</strong><br/>闭包持有旧state引用</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 style="color:#4caf50">✅ 新增设计模式</h3>
+                        <ul style="font-size:0.7em">
+                            <li><strong>协议依赖注入</strong><br/>Mock测试必备</li>
+                            <li><strong>响应式自动取消</strong><br/>cancellables.store</li>
+                            <li><strong>副作用清理</strong><br/>资源管理基础</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI隐瞒分析 -->
+            <section>
+                <h2>🤖 AI生成代码的常见隐瞒点</h2>
+                <div class="key-finding highlight-bad">
+                    <h3>1️⃣ 性能优化</h3>
+                    <p>不提 useMemo / useCallback / 虚拟列表</p>
+                </div>
+                <div class="key-finding highlight-bad">
+                    <h3>2️⃣ 资源清理</h3>
+                    <p>不提 cleanup 函数 / unsubscribe</p>
+                </div>
+                <div class="key-finding highlight-bad">
+                    <h3>3️⃣ 边界条件</h3>
+                    <p>不提空值处理 / 超长数据 / 并发问题</p>
+                </div>
+            </section>
+
+            <!-- 关键发现 -->
+            <section>
+                <h2>💡 关键发现总结</h2>
+                <div class="key-finding highlight-good">
+                    <h3>跨语言通用智慧</h3>
+                    <ol style="font-size:0.8em">
+                        <li>资源获取必有释放</li>
+                        <li>计算结果尽量缓存</li>
+                        <li>依赖变化要追踪</li>
+                    </ol>
+                </div>
+                <div class="key-finding highlight-note">
+                    <h3>架构设计原则</h3>
+                    <ol style="font-size:0.8em">
+                        <li>单一职责 > 过度抽象</li>
+                        <li>显式优于隐式</li>
+                        <li>可测试性驱动设计</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- 下一步 -->
+            <section>
+                <h2>📅 下一步计划</h2>
+                <div class="key-finding">
+                    <h3>Day 2 预告</h3>
+                    <p>Go/Rust 的错误处理模式对比</p>
+                </div>
+                <div class="key-finding">
+                    <h3>周末任务</h3>
+                    <p>整理可复用的审查 checklist</p>
+                </div>
+                <hr style="border-color:#333">
+                <p style="color:#888;font-size:0.6em">
+                    来源: SwiftfulStarterProject | Vibe Coding重构指南 | AI-Generated Code Pitfalls
+                </p>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/swift.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            slideNumber: 'c/t',
+            width: 1200,
+            height: 700,
+            margin: 0.1,
+            transition: 'slide',
+            backgroundTransition: 'fade'
+        });
+
+        // Initialize highlight.js
+        Reveal.on('ready', function() {
+            document.querySelectorAll('pre code').forEach(function(block) {
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
+</body>
+</html>
