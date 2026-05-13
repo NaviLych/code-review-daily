@@ -336,6 +336,209 @@ body {
   .review-card-header { gap: 6px; }
   .pattern-card { flex-direction: column; text-align: center; }
 }
+    .calendar-section {
+      margin-bottom: 2rem;
+    }
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      user-select: none;
+    }
+    .calendar-nav .nav-arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .calendar-nav .nav-arrow:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    .calendar-nav .month-label {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      min-width: 140px;
+      text-align: center;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+    .calendar-grid .weekday-header {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 6px 0 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .calendar-grid .day-cell {
+      position: relative;
+      text-align: center;
+      padding: 8px 2px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      cursor: default;
+      transition: background 0.2s, color 0.2s;
+      min-height: 42px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .calendar-grid .day-cell.other-month {
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+    .calendar-grid .day-cell.has-review {
+      color: var(--text-primary);
+      cursor: pointer;
+      background: rgba(137,180,250,0.06);
+      font-weight: 600;
+    }
+    .calendar-grid .day-cell.has-review:hover {
+      background: rgba(137,180,250,0.15);
+    }
+    .calendar-grid .day-cell.has-review.selected {
+      background: rgba(137,180,250,0.22);
+      border: 1px solid rgba(137,180,250,0.4);
+    }
+    .calendar-grid .day-cell.today {
+      color: var(--accent-blue);
+    }
+    .calendar-grid .day-cell .review-dot {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+    }
+    .calendar-grid .day-cell.has-review.selected .review-dot {
+      background: var(--accent-blue);
+      box-shadow: 0 0 6px var(--accent-blue);
+    }
+
+    /* Day detail card */
+    .day-detail-card {
+      margin-top: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      animation: fadeInUp 0.25s ease;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .day-detail-card .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+    .day-detail-card .detail-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .day-detail-card .detail-date {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .day-detail-card .detail-samples {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+    .day-detail-card .detail-sample-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .day-detail-card .detail-sample-prefix {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .day-detail-card .detail-sample-name {
+      color: var(--text-primary);
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+    .day-detail-card .detail-findings {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 1rem;
+    }
+    .day-detail-card .detail-finding {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+    .day-detail-card .detail-finding .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 0.45rem;
+      flex-shrink: 0;
+    }
+    .day-detail-card .detail-finding .dot.red    { background: var(--accent-red); }
+    .day-detail-card .detail-finding .dot.yellow { background: var(--accent-yellow); }
+    .day-detail-card .detail-finding .dot.green  { background: var(--accent-green); }
+    .day-detail-card .detail-links {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Mobile responsive for calendar */
+    @media (max-width: 600px) {
+      .calendar-grid {
+        gap: 2px;
+        padding: 4px;
+      }
+      .calendar-grid .day-cell {
+        padding: 6px 0;
+        font-size: 0.78rem;
+        min-height: 36px;
+      }
+      .calendar-grid .weekday-header {
+        font-size: 0.65rem;
+      }
+      .calendar-nav .month-label {
+        font-size: 1rem;
+      }
+    }
+
 </style>
 </head>
 <body>
@@ -347,10 +550,30 @@ body {
 </div>
 
 <!-- 统计栏 -->
-<div class="stats-bar" id="stats"></div>
+<div class="stats-bar" id="statsBar"></div>
 
 <!-- 主体 -->
-<div class="container" id="main"></div>
+<div class="container">
+  <div class="calendar-section">
+    <div class="section-title"><span class="icon">📅</span> 审查日历</div>
+    <div class="calendar-nav">
+      <span class="nav-arrow" onclick="calNav(-1)">◀</span>
+      <span class="month-label" id="calMonthLabel"></span>
+      <span class="nav-arrow" onclick="calNav(1)">▶</span>
+    </div>
+    <div class="calendar-grid" id="calGrid"></div>
+    <div id="calDetail"></div>
+  </div>
+
+  <div class="section-title" onclick="toggleDayCards()" style="cursor:pointer;user-select:none"><span class="icon">📋</span> 全部审查记录 <span id="toggleIcon" style="font-size:0.7em;color:var(--text-muted)">▶ 展开</span></div>
+  <div id="dayCards" style="display:none"></div>
+
+  <div class="section-title"><span class="icon">📚</span> 模式库</div>
+  <div id="patternCards"></div>
+
+  <div class="section-title"><span class="icon">🎬</span> 演示文稿</div>
+  <div id="presentationCards"></div>
+</div>
 
 <!-- 页脚 -->
 <div class="footer" id="footer"></div>
@@ -453,7 +676,7 @@ const reviewDays = [
         findings: [
           "泛型工厂: <T extends Shape> + new() => T 确保类型安全",
           "泛型观察者: <T> 约束update参数类型，编译期捕获错误",
-          {good:true, text:"跨语言对比：TS/Go/Swift/Swift 接口抽象模式一致"}
+          {good:true, text:"跨语言对比：TS/Go/Swift 接口抽象模式一致"}
         ]
       }
     ],
@@ -469,6 +692,7 @@ const reviewDays = [
         name: "Swift VIPER 架构（好设计）",
         langs: ["swift"],
         findings: [
+<<<<<<< Updated upstream
           "✅ 协议抽象实现依赖解耦，可随时替换实现",
           "✅ 职责边界清晰：View仅渲染，Interactor纯业务",
           "✅ 测试友好：依赖注入使Mock轻而易举"
@@ -490,6 +714,29 @@ const reviewDays = [
           "🔴 useEffect 缺少清理函数，连接未正确关闭",
           "🔴 事件监听器累积未移除",
           "✅ 修复：return cleanup函数 + AbortController"
+=======
+          "协议抽象 + 依赖注入 → Mock 测试轻而易举",
+          "职责边界清晰：View/Presenter/Interactor/Router/Entity",
+          {good:true, text:"可测试性驱动设计"}
+        ]
+      },
+      {
+        name: "React 渲染内重复计算（反模式）",
+        langs: ["js"],
+        findings: [
+          "🔴 useMemo 缺失：每次渲染触发 O(n·logn) 完整重算",
+          "1000 条数据下帧率骤降 (5-8ms/次)",
+          "AI 最可能隐瞒：不提缓存、不提清理、不提边界"
+        ]
+      },
+      {
+        name: "WebSocket 内存泄漏（反模式）",
+        langs: ["js"],
+        findings: [
+          "🔴 组件卸载时连接永不关闭",
+          "roomId 变化时多个连接同时存活",
+          "🔴 无重连机制"
+>>>>>>> Stashed changes
         ]
       }
     ],
@@ -499,37 +746,50 @@ const reviewDays = [
   {
     day: "Day5",
     date: "2026-05-10",
-    focus: "并发陷阱：Java DCL & Swift async/await",
+    focus: "AI生成代码的典型缺陷：Spring Security·Stream·并发·Swift async/await·Java 25 ScopedValue",
     samples: [
       {
-        name: "Java DCL & Boolean 锁陷阱",
+        name: "Java/Spring Boot 废弃 API 三陷阱",
         langs: ["java"],
         findings: [
-          "DCL 无 volatile → 部分构造对象可见",
-          "Boolean.FALSE 作为锁与所有缓存用户共享 → 潜在死锁",
-          "✅ 修复：synchronized 方法或 Holder 模式"
+          "⚠ withDefaultPasswordEncoder() 内部 encoder 与 BCrypt bean 不一致",
+          "⚠ CORS 配置缺失：没有 CorsConfigurationSource，前端预检失败",
+          "⚠ WebSecurityConfigurerAdapter / authorizeRequests() / antMatchers() 已废弃",
+          "⚠ Collectors.toList() Java 16+ 废弃，语义与 toList() 不同"
         ]
       },
       {
-        name: "Swift async/await 并发三陷阱",
+        name: "Swift Optional 处理 & KVO 迁移",
         langs: ["swift"],
         findings: [
-          "串行 await vs 并行 async let 性能差异 3x",
-          "Task 隐式捕获 self + 无限序列 → 内存泄漏",
-          "Task.detached 脱离 @MainActor 上下文增加复杂度"
+          "⚠ nil → 空字符串破坏契约：nil = 没用户，\"\" = 有用户没名字",
+          "⚠ UIImage(named:)! 强制解包运行时崩溃",
+          "⚠ 旧式 KVO 未迁移到 @Observable (iOS 17+)",
+          "✅ 修复：保留 Optional 语义 / if let / @Observable"
+        ]
+      },
+      {
+        name: "Java 并发安全 & Swift async/await 陷阱",
+        langs: ["java", "swift"],
+        findings: [
+          "⚠ DCL 无 volatile → JVM 重排序，部分构造对象可见",
+          "⚠ Boolean.FALSE 作为锁与缓存用户共享 → 潜在死锁",
+          "⚠ 串行 await vs 并行 async let 性能差异 3x",
+          "⚠ Task 隐式捕获 self + 无限序列 → 内存泄漏",
+          "⚠ Task.detached 滥用脱离 @MainActor 上下文"
         ]
       },
       {
         name: "Java 25 ScopedValue 新特性误用",
         langs: ["java"],
         findings: [
-          "⚠ ScopedValue 绑定不传播到 ExecutorService 线程",
+          "⚠ ScopedValue 绑定不传播到 ExecutorService 线程 → NoSuchElementException",
           "⚠ .where() 结果未消费，绑定从未激活",
           "✅ 修复：使用 StructuredTaskScope 创建子任务"
         ]
       },
       {
-        name: "跨语言并发设计智慧",
+        name: "跨语言设计智慧",
         langs: ["java", "swift", "go"],
         findings: [
           {good:true, text:"结构化并发优于 ad-hoc 任务管理"},
@@ -538,7 +798,11 @@ const reviewDays = [
         ]
       }
     ],
+<<<<<<< Updated upstream
     md: "days/2026-05-10.md",
+=======
+    md: "days/20260510.md",
+>>>>>>> Stashed changes
     html: "days/2026-05-10-presentation.html"
   },
   {
@@ -547,6 +811,7 @@ const reviewDays = [
     focus: "AI生成Java并发代码的致命Bug",
     samples: [
       {
+<<<<<<< Updated upstream
         name: "synchronizedList 的假安全感",
         langs: ["java"],
         findings: [
@@ -580,6 +845,39 @@ const reviewDays = [
           "🔴 Boolean.FALSE 作为锁与所有用户共享 → 死锁风险",
           "🔴 StructuredTaskScope 泄漏超出预期范围",
           "✅ 使用 ThreadLocal 或显式作用域控制"
+=======
+        name: "Collections.synchronizedList() 伪安全",
+        langs: ["java"],
+        findings: [
+          "🔴 迭代+删除并发崩溃 ConcurrentModificationException",
+          "synchronizedList 只保护单个操作，复合操作不安全",
+          "✅ 修复：用 ConcurrentLinkedQueue 或显式 synchronized 块"
+        ]
+      },
+      {
+        name: "synchronized 阻塞 Virtual Thread",
+        langs: ["java"],
+        findings: [
+          "🔴 Java 21+ Virtual Thread 被 synchronized 钉住载体线程",
+          "吞吐量下降 90%",
+          "✅ 修复：用 ReentrantLock 替代 synchronized"
+        ]
+      },
+      {
+        name: "StructuredTaskScope 泄漏",
+        langs: ["java"],
+        findings: [
+          "🔴 fork 后无 join，僵尸线程",
+          "✅ 修复：必须调用 scope.join()"
+        ]
+      },
+      {
+        name: "CompletableFuture 异常吞噬",
+        langs: ["java"],
+        findings: [
+          "🔴 无日志，生产调试困难",
+          "✅ 修复：链必须有 whenComplete/handle"
+>>>>>>> Stashed changes
         ]
       }
     ],
@@ -592,6 +890,7 @@ const reviewDays = [
     focus: "Spring Boot @Transactional 静默失败",
     samples: [
       {
+<<<<<<< Updated upstream
         name: "Checked异常导致资金丢失",
         langs: ["java"],
         findings: [
@@ -625,6 +924,32 @@ const reviewDays = [
           "🔴 synchronized 导致 Virtual Thread pinned",
           "🔴 连接持有时间过长，连接池耗尽",
           "✅ 修复：ReentrantLock + 超时控制"
+=======
+        name: "自调用导致事务失效",
+        langs: ["java"],
+        findings: [
+          "🔴 同类方法内部调用不经过代理，@Transactional 不生效",
+          "最隐蔽：没有报错，事务悄悄跳过",
+          "✅ 修复：注入自身代理 / 拆分到不同 Bean"
+        ]
+      },
+      {
+        name: "非 public 方法事务失效",
+        langs: ["java"],
+        findings: [
+          "🔴 private/protected 方法上 @Transactional 不生效",
+          "Spring AOP 默认只代理 public 方法",
+          "✅ 修复：确保事务方法为 public"
+        ]
+      },
+      {
+        name: "异常类型不匹配",
+        langs: ["java"],
+        findings: [
+          "🔴 默认只回滚 RuntimeException，checked exception 不回滚",
+          "银行场景：转账失败但金额已扣",
+          "✅ 修复：rollbackFor = Exception.class"
+>>>>>>> Stashed changes
         ]
       }
     ],
@@ -735,7 +1060,7 @@ function renderStats() {
   const reviewPatterns = patternLibs.find(p => p.title === "审查模式库")?.count || 0;
   const archPatterns = patternLibs.find(p => p.title === "架构模式库")?.count || 0;
 
-  document.getElementById('stats').innerHTML = `
+  document.getElementById('statsBar').innerHTML = `
     <div class="stat-card">
       <div class="stat-number blue">${totalDays}</div>
       <div class="stat-label">审查天数</div>
@@ -871,10 +1196,151 @@ function renderFooter() {
 // ===== 初始化 =====
 (function init() {
   renderStats();
-  const main = document.getElementById('main');
-  main.innerHTML = renderReviewDays() + renderPatternLibs() + renderPresentations();
+  document.getElementById('dayCards').innerHTML = renderReviewDays();
+  document.getElementById('patternCards').innerHTML = renderPatternLibs();
+  document.getElementById('presentationCards').innerHTML = renderPresentations();
   renderFooter();
+  renderCalendar();
+  initCalendar();
 })();
+function renderCalendar() {
+  var grid = document.getElementById('calGrid');
+  var label = document.getElementById('calMonthLabel');
+
+  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  label.textContent = calYear + '年 ' + monthNames[calMonth];
+
+  var weekdays = ['一','二','三','四','五','六','日'];
+  var html = '';
+  // Weekday headers
+  weekdays.forEach(function(w) {
+    html += '<div class="weekday-header">' + w + '</div>';
+  });
+
+  // First day of the month (0=Sun, 1=Mon, ...)
+  var firstDay = new Date(calYear, calMonth, 1).getDay();
+  // Convert to Mon-first: Mon=0, Tue=1, ..., Sun=6
+  var startOffset = (firstDay + 6) % 7;
+
+  // Days in this month
+  var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+  // Previous month days to show
+  var prevMonthDays = new Date(calYear, calMonth, 0).getDate();
+
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  // Previous month cells
+  for (var i = startOffset - 1; i >= 0; i--) {
+    var dayNum = prevMonthDays - i;
+    html += '<div class="day-cell other-month">' + dayNum + '</div>';
+  }
+
+  // Current month cells
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = calYear + '-' +
+      String(calMonth + 1).padStart(2, '0') + '-' +
+      String(d).padStart(2, '0');
+    var hasReview = !!dayMap[dateStr];
+    var isToday = (dateStr === todayStr);
+    var isSelected = (dateStr === calSelectedDate);
+
+    var classes = 'day-cell';
+    if (hasReview) classes += ' has-review';
+    if (isToday) classes += ' today';
+    if (isSelected) classes += ' selected';
+
+    var onclick = hasReview ? ' onclick="selectCalendarDate(\'' + dateStr + '\')"' : '';
+
+    html += '<div class="' + classes + '"' + onclick + '>' + d;
+    if (hasReview) {
+      html += '<span class="review-dot"></span>';
+    }
+    html += '</div>';
+  }
+
+  // Next month cells to fill the last week
+  var totalCells = startOffset + daysInMonth;
+  var remaining = (7 - (totalCells % 7)) % 7;
+  for (var n = 1; n <= remaining; n++) {
+    html += '<div class="day-cell other-month">' + n + '</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+function calNav(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  calSelectedDate = null;
+  document.getElementById('calDetail').innerHTML = '';
+  renderCalendar();
+}
+
+function selectCalendarDate(dateStr) {
+  calSelectedDate = dateStr;
+  renderCalendar();
+  renderCalendarDetail(dateStr);
+}
+
+function renderCalendarDetail(dateStr) {
+  var detail = document.getElementById('calDetail');
+  var d = dayMap[dateStr];
+  if (!d) { detail.innerHTML = ''; return; }
+
+  var sampleHTML = d.samples.map(function(s) {
+    return '<div class="detail-sample-item">' +
+      '<span class="detail-sample-prefix">▸</span>' +
+      '<span class="detail-sample-name">' + s.name + '</span>' +
+      langTag(s.lang) +
+      '</div>';
+  }).join('');
+
+  var findingHTML = d.findings.map(function(f) {
+    return '<div class="detail-finding"><span class="dot ' + f.severity + '"></span><span>' + f.text + '</span></div>';
+  }).join('');
+
+  var mdLink = '<a class="card-link md" onclick="openReader(\'' + d.links.md + '\'); return false;">📝 MD 笔记</a>';
+  var htmlLink = d.links.html ? '<a class="card-link html" href="' + d.links.html + '">🖥️ HTML 演示</a>' : '';
+
+  detail.innerHTML = '<div class="day-detail-card">' +
+    '<div class="detail-header">' +
+      '<span class="day-badge">Day ' + d.dayNumber + '</span>' +
+      '<span class="detail-date">' + d.date + '</span>' +
+    '</div>' +
+    '<div class="detail-samples">' + sampleHTML + '</div>' +
+    '<div class="detail-findings">' + findingHTML + '</div>' +
+    '<div class="detail-links">' + mdLink + htmlLink + '</div>' +
+    '</div>';
+}
+
+// Initialize calendar: navigate to the month of the latest review entry
+
+function toggleDayCards() {
+  var el = document.getElementById('dayCards');
+  var icon = document.getElementById('toggleIcon');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    icon.textContent = '▼ 收起';
+  } else {
+    el.style.display = 'none';
+    icon.textContent = '▶ 展开';
+  }
+}
+
+(function initCalendar() {
+  if (days.length > 0) {
+    var lastDate = days[days.length - 1].date;
+    var parts = lastDate.split('-');
+    calYear = parseInt(parts[0], 10);
+    calMonth = parseInt(parts[1], 10) - 1;
+  }
+  renderCalendar();
+
 </script>
 </body>
 </html>
