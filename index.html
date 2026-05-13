@@ -380,43 +380,7 @@ body {
  */
 const reviewDays = [
   {
-    day: "Day4",
-    date: "2026-05-12",
-    focus: "跨语言设计模式：泛型、并发与内存管理",
-    samples: [
-      {
-        name: "AI生成代码Bug分类（来源：arxiv:2407.06153）",
-        langs: ["py", "go", "rust"],
-        findings: [
-          "语义错误（逻辑/算法）+ 语法错误（格式/类型）+ 运行时错误（空指针/溢出/泄漏）",
-          "AI倾向于生成更短但更复杂的代码，通过单元测试≠代码质量",
-          "✅ self-critique后pass rate提升29.2%"
-        ]
-      },
-      {
-        name: "Go vs Rust 并发模型对比",
-        langs: ["go", "rust"],
-        findings: [
-          "Go: CSP模型 + Goroutine/Channel，数据竞争在运行时检测",
-          "Rust: 所有权 + async/await，编译期防止数据竞争",
-          {good:true, text:"核心启示：安全 vs 性能的权衡，场景决定选择"}
-        ]
-      },
-      {
-        name: "TypeScript泛型设计模式",
-        langs: ["ts"],
-        findings: [
-          "泛型工厂: <T extends Shape> + new() => T 确保类型安全",
-          "泛型观察者: <T> 约束update参数类型，编译期捕获错误",
-          {good:true, text:"跨语言对比：TS/Go/Swift/Swift 接口抽象模式一致"}
-        ]
-      }
-    ],
-    md: "days/20260512.md",
-    html: "days/20260512.html"
-  },
-  {
-    day: "Day4",
+    day: "Day8",
     date: "2026-05-13",
     focus: "跨语言错误处理与并发安全",
     samples: [
@@ -461,7 +425,79 @@ const reviewDays = [
     html: "days/20260513.html"
   },
   {
-    day: "Day3",
+    day: "Day7",
+    date: "2026-05-12",
+    focus: "跨语言设计模式：泛型、并发与内存管理",
+    samples: [
+      {
+        name: "AI生成代码Bug分类（来源：arxiv:2407.06153）",
+        langs: ["py", "go", "rust"],
+        findings: [
+          "语义错误（逻辑/算法）+ 语法错误（格式/类型）+ 运行时错误（空指针/溢出/泄漏）",
+          "AI倾向于生成更短但更复杂的代码，通过单元测试≠代码质量",
+          "✅ self-critique后pass rate提升29.2%"
+        ]
+      },
+      {
+        name: "Go vs Rust 并发模型对比",
+        langs: ["go", "rust"],
+        findings: [
+          "Go: CSP模型 + Goroutine/Channel，数据竞争在运行时检测",
+          "Rust: 所有权 + async/await，编译期防止数据竞争",
+          {good:true, text:"核心启示：安全 vs 性能的权衡，场景决定选择"}
+        ]
+      },
+      {
+        name: "TypeScript泛型设计模式",
+        langs: ["ts"],
+        findings: [
+          "泛型工厂: <T extends Shape> + new() => T 确保类型安全",
+          "泛型观察者: <T> 约束update参数类型，编译期捕获错误",
+          {good:true, text:"跨语言对比：TS/Go/Swift/Swift 接口抽象模式一致"}
+        ]
+      }
+    ],
+    md: "days/20260512.md",
+    html: "days/20260512.html"
+  },
+  {
+    day: "Day6",
+    date: "2026-05-11",
+    focus: "跨语言架构设计与性能反模式",
+    samples: [
+      {
+        name: "Swift VIPER 架构（好设计）",
+        langs: ["swift"],
+        findings: [
+          "✅ 协议抽象实现依赖解耦，可随时替换实现",
+          "✅ 职责边界清晰：View仅渲染，Interactor纯业务",
+          "✅ 测试友好：依赖注入使Mock轻而易举"
+        ]
+      },
+      {
+        name: "React 性能反模式",
+        langs: ["js"],
+        findings: [
+          "🔴 每次渲染触发 O(n·logn) 全量计算，缺少 useMemo",
+          "🔴 [...filteredUsers].sort() spread拷贝多余",
+          "🔴 缺少防抖、分页、虚拟列表等性能优化"
+        ]
+      },
+      {
+        name: "WebSocket 内存泄漏",
+        langs: ["js"],
+        findings: [
+          "🔴 useEffect 缺少清理函数，连接未正确关闭",
+          "🔴 事件监听器累积未移除",
+          "✅ 修复：return cleanup函数 + AbortController"
+        ]
+      }
+    ],
+    md: "days/2026-05-11.md",
+    html: "days/2026-05-11-presentation.html"
+  },
+  {
+    day: "Day5",
     date: "2026-05-10",
     focus: "并发陷阱：Java DCL & Swift async/await",
     samples: [
@@ -502,8 +538,98 @@ const reviewDays = [
         ]
       }
     ],
-    md: "20260510.md",
-    html: "2026-05-10-presentation.html"
+    md: "days/2026-05-10.md",
+    html: "days/2026-05-10-presentation.html"
+  },
+  {
+    day: "Day4",
+    date: "2026-05-09",
+    focus: "AI生成Java并发代码的致命Bug",
+    samples: [
+      {
+        name: "synchronizedList 的假安全感",
+        langs: ["java"],
+        findings: [
+          "🔴 Collections.synchronizedList 只保证单操作原子性",
+          "🔴 for-each 迭代+条件删除 → ConcurrentModificationException",
+          "🔴 迭代期间其他线程可能修改列表"
+        ]
+      },
+      {
+        name: "synchronized 杀死 Virtual Thread",
+        langs: ["java"],
+        findings: [
+          "🔴 synchronized 阻塞导致 Virtual Thread  pinned 到 carrier",
+          "🔴 失去虚拟线程轻量优势，线程泄漏风险",
+          "✅ 修复：ReentrantLock + tryLock 替代 synchronized"
+        ]
+      },
+      {
+        name: "双重检查锁定的幽灵",
+        langs: ["java"],
+        findings: [
+          "🔴 无 volatile 的 DCL 存在指令重排序风险",
+          "🔴 部分构造对象可见性问题",
+          "✅ 修复：volatile 或 Holder 模式"
+        ]
+      },
+      {
+        name: "Boolean陷阱 & Structured Concurrency泄漏",
+        langs: ["java"],
+        findings: [
+          "🔴 Boolean.FALSE 作为锁与所有用户共享 → 死锁风险",
+          "🔴 StructuredTaskScope 泄漏超出预期范围",
+          "✅ 使用 ThreadLocal 或显式作用域控制"
+        ]
+      }
+    ],
+    md: "days/2026-05-09.md",
+    html: "days/2026-05-09-presentation.html"
+  },
+  {
+    day: "Day3",
+    date: "2026-05-08",
+    focus: "Spring Boot @Transactional 静默失败",
+    samples: [
+      {
+        name: "Checked异常导致资金丢失",
+        langs: ["java"],
+        findings: [
+          "🔴 IOException是checked exception，Spring默认不回滚",
+          "🔴 from.debit已持久化，to.credit从未执行 → 资金消失",
+          "✅ 修复：rollbackFor = Exception.class 或抛RuntimeException"
+        ]
+      },
+      {
+        name: "自调用导致事务失效",
+        langs: ["java"],
+        findings: [
+          "🔴 this.方法() 绕过Spring代理，@Transactional无效",
+          "🔴 private方法无法被代理拦截",
+          "✅ 修复：通过代理调用或拆分为独立Bean"
+        ]
+      },
+      {
+        name: "REQUIRES_NEW 在连接池耗尽时死锁",
+        langs: ["java"],
+        findings: [
+          "🔴 REQUIRES_NEW 挂起当前事务，单独获取连接",
+          "🔴 高并发时连接池耗尽，新请求等待 → 死锁",
+          "⚠ 事务内远程调用导致长事务，锁住DB资源"
+        ]
+      },
+      {
+        name: "Virtual Thread + synchronized + 连接泄漏",
+        langs: ["java"],
+        findings: [
+          "🔴 synchronized 导致 Virtual Thread pinned",
+          "🔴 连接持有时间过长，连接池耗尽",
+          "✅ 修复：ReentrantLock + 超时控制"
+        ]
+      }
+    ],
+    md: "days/2026-05-08.md",
+    html: "days/2026-05-08-presentation.html"
   },
   {
     day: "Day2",
@@ -538,8 +664,8 @@ const reviewDays = [
         ]
       }
     ],
-    md: "2026-05-07.md",
-    html: "2026-05-07-presentation.html"
+    md: "days/2026-05-07.md",
+    html: "days/2026-05-07-presentation.html"
   },
   {
     day: "Day1",
@@ -565,7 +691,7 @@ const reviewDays = [
         ]
       }
     ],
-    md: "2026-05-06.md",
+    md: "days/2026-05-06.md",
     html: null
   }
 ];
