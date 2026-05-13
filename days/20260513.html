@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码审查练习 - 2026年5月13日</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --accent-red: #f44336;
+            --accent-yellow: #ffc107;
+            --accent-green: #4caf50;
+            --accent-blue: #2196f3;
+        }
+        .reveal { background: var(--bg-dark); }
+        .reveal .slides { text-align: left; }
+        .reveal h1 { font-size: 1.8em; color: #fff; }
+        .reveal h2 { font-size: 1.4em; color: var(--accent-blue); }
+        .reveal h3 { font-size: 1.1em; color: #ccc; }
+        .reveal code { 
+            font-family: 'Fira Code', 'Consolas', monospace; 
+            background: #2d2d2d;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+            font-size: 0.75em;
+        }
+        .reveal pre { 
+            margin: 0.5em 0;
+            box-shadow: none;
+            width: 100%;
+        }
+        .reveal pre code {
+            padding: 0.5em;
+            font-size: 0.65em;
+            max-height: 400px;
+        }
+        .reveal ul { margin-left: 1em; }
+        .reveal li { margin: 0.3em 0; font-size: 0.75em; }
+        .reveal p { font-size: 0.75em; margin: 0.3em 0; }
+        .reveal table { font-size: 0.6em; margin: 0.5em 0; }
+        .reveal th, .reveal td { padding: 0.3em 0.5em; }
+        
+        .tag-red { color: var(--accent-red); font-weight: bold; }
+        .tag-yellow { color: var(--accent-yellow); font-weight: bold; }
+        .tag-green { color: var(--accent-green); font-weight: bold; }
+        .tag-blue { color: var(--accent-blue); font-weight: bold; }
+        
+        .slide-title { 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 1em;
+            border-left: 4px solid var(--accent-blue);
+        }
+        .highlight-box {
+            background: rgba(255,193,7,0.1);
+            border-left: 3px solid var(--accent-yellow);
+            padding: 0.5em 1em;
+            margin: 0.5em 0;
+        }
+        .danger-box {
+            background: rgba(244,67,54,0.1);
+            border-left: 3px solid var(--accent-red);
+            padding: 0.5em 1em;
+            margin: 0.5em 0;
+        }
+        .success-box {
+            background: rgba(76,175,80,0.1);
+            border-left: 3px solid var(--accent-green);
+            padding: 0.5em 1em;
+            margin: 0.5em 0;
+        }
+        .two-col { display: flex; gap: 1em; }
+        .two-col > div { flex: 1; }
+        .meta { color: #888; font-size: 0.5em; margin-top: 1em; }
+        
+        @media (max-width: 768px) {
+            .reveal { font-size: 16px; }
+            .reveal h1 { font-size: 1.3em; }
+            .reveal h2 { font-size: 1.1em; }
+            .reveal li, .reveal p { font-size: 0.6em; }
+            .reveal pre code { font-size: 0.5em; }
+            .two-col { flex-direction: column; }
+            .reveal table { font-size: 0.45em; }
+        }
+        
+        /* Mobile fallback */
+        @media (max-width: 768px) {
+            .reveal .slides { text-align: left !important; }
+            .reveal h1, .reveal h2 { text-align: left !important; }
+            pre code { white-space: pre-wrap !important; word-break: break-all !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            
+            <!-- Slide 1: Title -->
+            <section>
+                <div class="slide-title">
+                    <h1>🔍 每日代码审查练习</h1>
+                    <h2>2026年5月13日 · 第3天/共12天</h2>
+                    <p class="tag-blue">审查主题：跨语言错误处理与并发安全</p>
+                    <div class="meta">来源：techdebt.works, PVS-Studio, Materialize, GitHub</div>
+                </div>
+            </section>
+
+            <!-- Slide 2: Agenda -->
+            <section>
+                <h2>📋 今日议程</h2>
+                <ul>
+                    <li><span class="tag-blue">Round 1</span> 数据流审查：输入→处理→输出</li>
+                    <li><span class="tag-yellow">Round 2</span> 边界条件：空值/并发/异常</li>
+                    <li><span class="tag-green">Round 3</span> 必要性：每行代码能否删掉？</li>
+                    <li><span class="tag-red">Round 4</span> 反向审查：AI最可能隐瞒什么</li>
+                    <li><span class="tag-blue">Output</span> 跨语言模式对比与积累</li>
+                </ul>
+                <div class="highlight-box">
+                    <strong>重点语言</strong>：Rust · Go · TypeScript · Swift
+                </div>
+            </section>
+
+            <!-- Slide 3: Rust Double-Free -->
+            <section>
+                <h2>🔴 Rust crossbeam-channel Double-Free</h2>
+                <p class="tag-red">严重度：HIGH · 来源：Materialize</p>
+                <pre><code class="language-rust">// Channel 初始化是两步操作，存在竞态窗口
+head = null;  // Step 1
+tail = null;  // Step 2
+// 此时 head==tail==null，但内部状态不一致
+
+// 问题：Sender 和 Receiver 同时操作时
+// 可能触发 Block 被两次释放</code></pre>
+                <div class="danger-box">
+                    <strong>教训</strong>：Rust 所有权系统优秀，但并发初始化/析构的边界情况仍可能突破安全边界
+                </div>
+                <p class="meta">https://materialize.com/blog/rust-concurrency-bug-unbounded-channels/</p>
+            </section>
+
+            <!-- Slide 4: Go Error Shadowing -->
+            <section>
+                <h2>🔴 Go 错误变量遮蔽</h2>
+                <p class="tag-red">严重度：HIGH · 来源：PVS-Studio</p>
+                <pre><code class="language-go">resp, err := c.List(opts)
+if err != nil { return resp, err }
+data := resp.Data
+
+// ⚠️ 循环内的 err 遮蔽了外层的 err
+for next, err := resp.Next(); next != nil && err == nil; {
+    data = append(data, next.Data...)
+}
+if err != nil {  // 检查的是外层 err，不是循环终止原因
+    return resp, err
+}
+return resp, err  // 返回初始 err，永远不是真正的错误</code></pre>
+                <div class="danger-box">
+                    <strong>修复</strong>：外层用 `var err error`，循环用 `err = resp.Next()` 赋值而非声明
+                </div>
+            </section>
+
+            <!-- Slide 5: TypeScript as any -->
+            <section>
+                <h2>🔴 TypeScript as any 类型安全破坏</h2>
+                <p class="tag-red">严重度：HIGH · 来源：GitHub #466</p>
+                <div class="two-col">
+                    <div>
+                        <pre><code class="language-typescript">// ❌ 滥用 as any
+const tuiClient = this.client as any
+const data = response as any
+(part as any).thinking = true
+
+// API 返回意外结构时
+// 运行时报崩溃</code></pre>
+                    </div>
+                    <div>
+                        <pre><code class="language-typescript">// ✅ 正确做法
+interface TuiClient {
+    connect(): Promise<void>;
+    send(msg: string): Promise<Response>;
+}
+const tuiClient = this.client as TuiClient;
+
+// 或使用 unknown + 类型守卫
+function isTuiClient(x: unknown): x is TuiClient {
+    return typeof x === 'object' && x !== null;
+}</code></pre>
+                    </div>
+                </div>
+                <p class="meta">https://github.com/code-yeongyu/oh-my-openagent/issues/466</p>
+            </section>
+
+            <!-- Slide 6: Rust TOCTOU -->
+            <section>
+                <h2>🟡 Rust Async TOCTOU 竞态</h2>
+                <p class="tag-yellow">严重度：MEDIUM · 来源：MarkAI Code</p>
+                <div class="two-col">
+                    <div>
+                        <pre><code class="language-rust">// ❌ Time-of-Check-Time-of-Use
+async fn verify_and_use_file(path: &Path) {
+    let metadata = fs::metadata(path).await?; // Check
+    if metadata.permissions().readonly() {
+        return Err(Error::PermissionDenied);
+    }
+    // ⚠️ 时间窗口：权限可能在此被修改
+    let content = fs::read_to_string(path).await?; // Use
+}</code></pre>
+                    </div>
+                    <div>
+                        <pre><code class="language-rust">// ✅ 修复：使用文件描述符
+async fn verify_and_use_file_fd(fd: &File) {
+    // 文件描述符在打开时锁定权限
+    let content = fd.read_to_string().await?;
+}</code></pre>
+                    </div>
+                </div>
+                <p class="meta">https://markaicode.com/rust-security-vulnerabilities-2025-analysis-mitigation/</p>
+            </section>
+
+            <!-- Slide 7: Empty Catch -->
+            <section>
+                <h2>🔴 JavaScript 空 Catch 吞异常</h2>
+                <p class="tag-red">严重度：HIGH · 统计：69处空catch</p>
+                <div class="two-col">
+                    <div>
+                        <pre><code class="language-javascript">// ❌ AI 生成的典型问题
+try {
+    JSON.parse(userInput);
+} catch (e) { }  // 静默忽略
+
+// ❌ 更隐蔽的变体
+try {
+    doSomething();
+} catch (_) { }</code></pre>
+                    </div>
+                    <div>
+                        <pre><code class="language-javascript">// ✅ 正确做法
+try {
+    JSON.parse(userInput);
+} catch (e) {
+    logger.warn('Invalid JSON', { error: e, input: userInput });
+    return null;
+}</code></pre>
+                    </div>
+                </div>
+                <p class="meta">https://techdebt.works/ai-code-review/</p>
+            </section>
+
+            <!-- Slide 8: AI Patterns -->
+            <section>
+                <h2>🤖 AI 生成代码的 8 大模式</h2>
+                <p class="tag-blue">来源：techdebt.works AI Code Review Guide</p>
+                <table>
+                    <tr><th>#</th><th>模式</th><th>风险</th></tr>
+                    <tr><td class="tag-red">1</td><td>过度冗长错误处理</td><td>try/catch 吞异常</td></tr>
+                    <tr><td class="tag-yellow">2</td><td>命名不一致</td><td>camelCase/snake_case 混用</td></tr>
+                    <tr><td class="tag-red">3</td><td>未使用导入/死代码</td><td>引入不存在/有漏洞的包</td></tr>
+                    <tr><td class="tag-yellow">4</td><td>函数职责过多</td><td>40+ 行，违反 SRP</td></tr>
+                    <tr><td class="tag-red">5</td><td>缺失边界处理</td><td>空数组、null、超大值</td></tr>
+                    <tr><td class="tag-yellow">6</td><td>硬编码配置</td><td>环境差异时失败</td></tr>
+                    <tr><td class="tag-yellow">7</td><td>通用变量名</td><td>data/result/temp 无语义</td></tr>
+                    <tr><td class="tag-yellow">8</td><td>注释重复代码</td><td>不解释 WHY，只说 WHAT</td></tr>
+                </table>
+            </section>
+
+            <!-- Slide 9: Cross Language Error -->
+            <section>
+                <h2>🌐 跨语言错误处理对比</h2>
+                <table>
+                    <tr><th>语言</th><th>错误机制</th><th>类型安全</th><th>典型反模式</th></tr>
+                    <tr><td class="tag-blue">Go</td><td>多返回值 + error</td><td class="tag-red">❌ 无</td><td>忽略错误 `_`</td></tr>
+                    <tr><td class="tag-yellow">Rust</td><td>Result&lt;T, E&gt; 枚举</td><td class="tag-green">✅</td><td>`unwrap()` 滥用</td></tr>
+                    <tr><td class="tag-blue">TypeScript</td><td>try/catch</td><td class="tag-yellow">🟡</td><td>`as any`</td></tr>
+                    <tr><td class="tag-green">Swift</td><td>throws / Result</td><td class="tag-green">✅</td><td>过度 try?</td></tr>
+                </table>
+                <div class="success-box">
+                    <strong>共同智慧</strong>：错误是值，不是异常。向上传递时用包装器添加上下文。
+                </div>
+            </section>
+
+            <!-- Slide 10: Go Best Practice -->
+            <section>
+                <h2>✅ Go 统一错误响应模式</h2>
+                <pre><code class="language-go">// ✅ 领域错误型
+type AppError struct {
+    Code    int    // HTTP 状态码
+    Message string // 用户可见消息
+    Err     error  // 内部错误
+}
+
+func (e *AppError) Unwrap() error { return e.Err }
+
+// ✅ 调用方使用 errors.As
+var appErr *AppError
+if errors.As(err, &appErr) {
+    http.Error(w, appErr.Message, appErr.Code)
+}
+
+// ✅ 工厂函数
+func NewNotFound(resource string) *AppError {
+    return &AppError{Code: 404, Message: resource + " not found"}
+}</code></pre>
+                <p class="meta">https://it-araiguma.com/go-error-handling-design-pattern-guide/</p>
+            </section>
+
+            <!-- Slide 11: Rust Auth Race -->
+            <section>
+                <h2>🔴 Rust 认证竞态修复</h2>
+                <p class="tag-red">来源：MarkAI Code Case Study</p>
+                <div class="two-col">
+                    <div>
+                        <pre><code class="language-rust">// ❌ 漏洞代码
+async fn authenticate(creds: Credentials) {
+    let user = db::find_user(&creds.username).await?;
+    // ⚠️ 多线程可同时触发，生成多个 token
+    if !verify_password(&creds.password, &user.hash).await? {
+        return Err(InvalidCredentials);
+    }
+    let token = generate_token(&user).await?;
+    db::update_last_login(&user.id).await?;
+}</code></pre>
+                    </div>
+                    <div>
+                        <pre><code class="language-rust">// ✅ 修复：使用事务
+async fn authenticate(creds: Credentials) {
+    let mut tx = db::begin_transaction().await?;
+    let user = db::find_user_for_update(&mut tx, &creds.username).await?;
+    if !verify_password(&creds.password, &user.hash).await? {
+        tx.rollback().await?;
+        return Err(InvalidCredentials);
+    }
+    let token = generate_token(&user).await?;
+    db::update_last_login(&mut tx, &user.id).await?;
+    tx.commit().await?;
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 12: Pattern Accumulation -->
+            <section>
+                <h2>📚 今日审查模式积累</h2>
+                <ul>
+                    <li><span class="tag-red">NEW</span> <strong>空 Catch 块静默吞异常</strong> (severity: HIGH)
+                        <br>&nbsp;&nbsp;&nbsp;症状：catch 块为空或只有注释 | 修复：至少 log debug</li>
+                    <li><span class="tag-red">NEW</span> <strong>循环变量遮蔽外层错误</strong> (severity: HIGH, Go)
+                        <br>&nbsp;&nbsp;&nbsp;症状：`err :=` 遮蔽外层变量 | 修复：用 `err =` 赋值</li>
+                    <li><span class="tag-yellow">NEW</span> <strong>Rust async TOCTOU</strong> (severity: MEDIUM)
+                        <br>&nbsp;&nbsp;&nbsp;症状：权限检查和操作分离 | 修复：使用文件描述符</li>
+                    <li><span class="tag-red">NEW</span> <strong>TypeScript as any 滥用</strong> (severity: HIGH)
+                        <br>&nbsp;&nbsp;&nbsp;症状：绕过类型检查 | 修复：定义接口 + 类型守卫</li>
+                </ul>
+            </section>
+
+            <!-- Slide 13: Summary -->
+            <section>
+                <h2>📊 审查总结</h2>
+                <div class="two-col">
+                    <div class="danger-box">
+                        <h3>🔴 高风险发现 (3)</h3>
+                        <ul>
+                            <li>Rust Channel Double-Free</li>
+                            <li>Go 错误变量遮蔽</li>
+                            <li>TypeScript as any</li>
+                        </ul>
+                    </div>
+                    <div class="highlight-box">
+                        <h3>🟡 中风险发现 (2)</h3>
+                        <ul>
+                            <li>Rust async TOCTOU</li>
+                            <li>JavaScript 空 Catch</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="success-box">
+                    <strong>跨语言智慧</strong>：错误处理的本质是上下文传递。无论语言，都应：向上传播时包装，向下传递时验证。
+                </div>
+                <p class="meta">审查耗时：约25分钟 | 审查深度：4层全遍历</p>
+            </section>
+
+            <!-- Slide 14: Sources -->
+            <section>
+                <h2>📎 来源链接</h2>
+                <ul style="font-size: 0.55em;">
+                    <li><a href="https://techdebt.works/ai-code-review/">AI Code Review Guide - techdebt.works</a></li>
+                    <li><a href="https://clacky.ai/blog/code-review-checklist-ai-generated-code">Code Review Checklist - clacky.ai</a></li>
+                    <li><a href="https://materialize.com/blog/rust-concurrency-bug-unbounded-channels/">Rust Double-Free Bug - Materialize</a></li>
+                    <li><a href="https://pvs-studio.com/en/blog/posts/go/1371/">Go Error Handling - PVS-Studio</a></li>
+                    <li><a href="https://markaicode.com/rust-security-vulnerabilities-2025-analysis-mitigation/">Rust Security 2025 - MarkAI Code</a></li>
+                    <li><a href="https://github.com/code-yeongyu/oh-my-openagent/issues/466">TypeScript Anti-Patterns - GitHub</a></li>
+                    <li><a href="https://it-araiguma.com/go-error-handling-design-pattern-guide/">Go Error Patterns - it-araiguma</a></li>
+                </ul>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            slideNumber: true,
+            transition: 'fade',
+            transitionSpeed: 'fast',
+            backgroundTransition: 'fade',
+            highlight: {
+                escapeHTML: false,
+                beforeHighlight: function(lang) {
+                    ['rust', 'go', 'typescript', 'javascript', 'python', 'swift'].forEach(l => {
+                        if (!hljs.getLanguage(l)) {
+                            hljs.registerLanguage(l, function() { return { name: l }; });
+                        }
+                    });
+                }
+            }
+        });
+        
+        // Mobile fallback: if reveal fails, show content directly
+        if (typeof Reveal === 'undefined') {
+            document.querySelector('.reveal').classList.add('fallback');
+        } else {
+            document.querySelector('.reveal').classList.add('ready');
+        }
+    </script>
+</body>
+</html>

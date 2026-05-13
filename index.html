@@ -416,6 +416,51 @@ const reviewDays = [
     html: "days/20260512.html"
   },
   {
+    day: "Day4",
+    date: "2026-05-13",
+    focus: "跨语言错误处理与并发安全",
+    samples: [
+      {
+        name: "Rust crossbeam-channel Double-Free",
+        langs: ["rust"],
+        findings: [
+          "🔴 Channel 初始化两步操作存在竞态窗口",
+          "head=tail=null 时内部状态不一致",
+          "Rust 所有权优秀，但并发析构仍可突破安全边界"
+        ]
+      },
+      {
+        name: "Go 错误变量遮蔽",
+        langs: ["go"],
+        findings: [
+          "🔴 for 循环内 err:= 遮蔽外层 err",
+          "循环终止后检查的仍是初始 nil",
+          "✅ 修复：用 err= 赋值而非 err:= 声明"
+        ]
+      },
+      {
+        name: "TypeScript as any 滥用",
+        langs: ["ts"],
+        findings: [
+          "🔴 类型断言到 any 绕过编译检查",
+          "API 返回意外结构时运行时崩溃",
+          "✅ 修复：定义接口 + 类型守卫 unknown+isX"
+        ]
+      },
+      {
+        name: "跨语言错误处理模式对比",
+        langs: ["go", "rust", "ts", "swift"],
+        findings: [
+          {good:true, text:"错误是值，不是异常"},
+          {good:true, text:"向上传播时用包装器添加上下文"},
+          {good:true, text:"统一错误响应：error→HTTP status mapping"}
+        ]
+      }
+    ],
+    md: "days/20260513.md",
+    html: "days/20260513.html"
+  },
+  {
     day: "Day3",
     date: "2026-05-10",
     focus: "并发陷阱：Java DCL & Swift async/await",
