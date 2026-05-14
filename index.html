@@ -738,7 +738,7 @@ const reviewDays = [
         name: "Swift Optional 处理 & KVO 迁移",
         langs: ["swift"],
         findings: [
-          "⚠ nil → 空字符串破坏契约：nil = 没用户，\"\" = 有用户没名字",
+          "⚠ nil → 空字符串破坏契约：nil = 没用户，'' = 有用户没名字",
           "⚠ UIImage(named:)! 强制解包运行时崩溃",
           "⚠ 旧式 KVO 未迁移到 @Observable (iOS 17+)",
           "✅ 修复：保留 Optional 语义 / if let / @Observable"
@@ -912,7 +912,7 @@ const reviewDays = [
         findings: [
           "假设 drop_params=True 会删除参数值，实际只删参数名 → no-op",
           "未验证外部库 MINIMUM_PROMPT_CACHE_TOKEN_COUNT 常量",
-          "Runtime 失败，AI 仍声明\"任务完成\""
+          "Runtime 失败，AI 仍声明「任务完成」"
         ]
       }
     ],
@@ -950,35 +950,60 @@ const patternLibs = [
 ];
 
 // =====================================================================
-// 渲染逻辑（一般无需修改）
+// 日历相关变量和函数
 // =====================================================================
 
-/** 渲染统计栏 */
-function renderStats() {
-  const totalDays = reviewDays.length;
-  const totalPatterns = patternLibs.reduce((s, p) => s + p.count, 0);
-  const reviewPatterns = patternLibs.find(p => p.title === "审查模式库")?.count || 0;
-  const archPatterns = patternLibs.find(p => p.title === "架构模式库")?.count || 0;
+/** 日历状态变量 */
+var calYear;
+var calMonth;
+var calSelectedDate = null;
 
-  document.getElementById('statsBar').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-number blue">${totalDays}</div>
-      <div class="stat-label">审查天数</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number green">${reviewPatterns}</div>
-      <div class="stat-label">审查模式</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number purple">${archPatterns}</div>
-      <div class="stat-label">架构模式</div>
-    </div>
-  `;
+/** 日历日期到审查日的映射 */
+var dayMap = {};
+
+/**
+ * 从 reviewDays 构建 dayMap
+ * 将 reviewDays 数组转换为 { "2026-05-13": {...} } 格式
+ */
+function buildDayMap() {
+  dayMap = {};
+  reviewDays.forEach(function(d) {
+    var dateStr = d.date;
+    // 从 "Day8" 提取数字 "8"
+    var dayNumber = d.day.replace(/[^0-9]/g, '');
+    // 从 samples 提取所有 findings 并打平
+    var allFindings = [];
+    d.samples.forEach(function(sample) {
+      sample.findings.forEach(function(f) {
+        if (typeof f === 'string') {
+          allFindings.push({ type: 'text', text: f });
+        } else if (f.good) {
+          allFindings.push({ type: 'good', text: f.text });
+        } else if (f.warn) {
+          allFindings.push({ type: 'warn', text: f.text });
+        } else {
+          allFindings.push({ type: 'text', text: f.text || String(f) });
+        }
+      });
+    });
+    dayMap[dateStr] = {
+      dayNumber: dayNumber,
+      day: d.day,
+      date: dateStr,
+      focus: d.focus,
+      samples: d.samples,
+      findings: allFindings,
+      links: {
+        md: d.md,
+        html: d.html
+      }
+    };
+  });
 }
 
 /** 渲染语言 badge */
-function langBadge(lang) {
-  const map = {
+function langBadgeCal(lang) {
+  var map = {
     js: ['JavaScript', 'lang-js'],
     py: ['Python', 'lang-py'],
     swift: ['Swift', 'lang-swift'],
@@ -988,54 +1013,102 @@ function langBadge(lang) {
     ts: ['TypeScript', 'lang-js'],
     c: ['C/C++', 'lang-go']
   };
-  const [label, cls] = map[lang] || [lang, ''];
-  return `<span class="lang-badge ${cls}">${label}</span>`;
+  var info = map[lang] || [lang, ''];
+  return '<span class="lang-badge ' + info[1] + '">' + info[0] + '</span>';
+}
+
+// =====================================================================
+// 渲染逻辑（一般无需修改）
+// =====================================================================
+
+/** 渲染统计栏 */
+function renderStats() {
+  var totalDays = reviewDays.length;
+  var reviewPatterns = patternLibs.find(function(p) { return p.title === "审查模式库"; });
+  var archPatterns = patternLibs.find(function(p) { return p.title === "架构模式库"; });
+  var reviewCount = reviewPatterns ? reviewPatterns.count : 0;
+  var archCount = archPatterns ? archPatterns.count : 0;
+
+  document.getElementById('statsBar').innerHTML = 
+    '<div class="stat-card">' +
+      '<div class="stat-number blue">' + totalDays + '</div>' +
+      '<div class="stat-label">审查天数</div>' +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="stat-number green">' + reviewCount + '</div>' +
+      '<div class="stat-label">审查模式</div>' +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="stat-number purple">' + archCount + '</div>' +
+      '<div class="stat-label">架构模式</div>' +
+    '</div>';
+}
+
+/** 渲染语言 badge（卡片用） */
+function langBadge(lang) {
+  var map = {
+    js: ['JavaScript', 'lang-js'],
+    py: ['Python', 'lang-py'],
+    swift: ['Swift', 'lang-swift'],
+    go: ['Go', 'lang-go'],
+    rust: ['Rust', 'lang-rust'],
+    java: ['Java', 'lang-py'],
+    ts: ['TypeScript', 'lang-js'],
+    c: ['C/C++', 'lang-go']
+  };
+  var info = map[lang] || [lang, ''];
+  return '<span class="lang-badge ' + info[1] + '">' + info[0] + '</span>';
 }
 
 /** 渲染单条发现 */
 function renderFinding(f) {
   if (typeof f === 'string') {
-    return `<li>${f}</li>`;
+    return '<li>' + f + '</li>';
   }
-  const cls = f.good ? 'good' : f.warn ? 'warn' : '';
-  return `<li class="${cls}">${f.text || f}</li>`;
+  var cls = f.good ? 'good' : (f.warn ? 'warn' : '');
+  return '<li class="' + cls + '">' + (f.text || String(f)) + '</li>';
 }
 
 /** 渲染审查日卡片 */
 function renderReviewDays() {
-  let html = `<div class="section-title"><span class="comment">//</span> 每日审查笔记</div>`;
+  var html = '<div class="section-title"><span class="comment">//</span> 每日审查笔记</div>';
 
-  reviewDays.forEach(d => {
+  reviewDays.forEach(function(d) {
     // 收集所有语言
-    const allLangs = [...new Set(d.samples.flatMap(s => s.langs))];
+    var allLangs = [];
+    d.samples.forEach(function(s) {
+      s.langs.forEach(function(l) {
+        if (allLangs.indexOf(l) === -1) allLangs.push(l);
+      });
+    });
 
-    let samplesHtml = d.samples.map(s => `
-      <div class="sample-name">${s.name}</div>
-      <ul class="findings">${s.findings.map(renderFinding).join('')}</ul>
-    `).join('');
+    var samplesHtml = '';
+    d.samples.forEach(function(s) {
+      var findingsHtml = '';
+      s.findings.forEach(function(f) {
+        findingsHtml += renderFinding(f);
+      });
+      samplesHtml += '<div class="sample-name">' + s.name + '</div><ul class="findings">' + findingsHtml + '</ul>';
+    });
 
-    let linksHtml = '';
+    var linksHtml = '';
     if (d.md) {
-      linksHtml += `<a class="card-link" href="${d.md}">📝 ${d.md}</a>`;
+      linksHtml += '<a class="card-link" href="' + d.md + '">📝 ' + d.md + '</a>';
     }
     if (d.html) {
-      linksHtml += `<a class="card-link" href="${d.html}">🖥 演示文稿</a>`;
+      linksHtml += '<a class="card-link" href="' + d.html + '">🖥 演示文稿</a>';
     }
 
-    html += `
-      <a class="review-card" href="${d.md || '#'}">
-        <div class="review-card-header">
-          <span class="day-tag">${d.day}</span>
-          <span class="date">${d.date}</span>
-          ${allLangs.map(langBadge).join('')}
-        </div>
-        <div style="font-size:13px;color:var(--accent-orange);margin-bottom:10px;">
-          🎯 ${d.focus}
-        </div>
-        ${samplesHtml}
-        <div class="card-footer">${linksHtml}</div>
-      </a>
-    `;
+    html += '<a class="review-card" href="' + (d.md || '#') + '">' +
+      '<div class="review-card-header">' +
+        '<span class="day-tag">' + d.day + '</span>' +
+        '<span class="date">' + d.date + '</span>' +
+        allLangs.map(langBadge).join('') +
+      '</div>' +
+      '<div style="font-size:13px;color:var(--accent-orange);margin-bottom:10px;">🎯 ' + d.focus + '</div>' +
+      samplesHtml +
+      '<div class="card-footer">' + linksHtml + '</div>' +
+    '</a>';
   });
 
   return html;
@@ -1043,19 +1116,17 @@ function renderReviewDays() {
 
 /** 渲染模式库卡片 */
 function renderPatternLibs() {
-  let html = `<div class="section-title"><span class="comment">//</span> 模式库</div>`;
+  var html = '<div class="section-title"><span class="comment">//</span> 模式库</div>';
 
-  patternLibs.forEach(p => {
-    html += `
-      <a class="pattern-card" href="${p.file}">
-        <div class="pattern-icon">${p.icon}</div>
-        <div class="pattern-info">
-          <div class="pattern-title">${p.title}</div>
-          <div class="pattern-desc">${p.desc}</div>
-        </div>
-        <div class="pattern-count">${p.count}<span> 条</span></div>
-      </a>
-    `;
+  patternLibs.forEach(function(p) {
+    html += '<a class="pattern-card" href="' + p.file + '">' +
+      '<div class="pattern-icon">' + p.icon + '</div>' +
+      '<div class="pattern-info">' +
+        '<div class="pattern-title">' + p.title + '</div>' +
+        '<div class="pattern-desc">' + p.desc + '</div>' +
+      '</div>' +
+      '<div class="pattern-count">' + p.count + '<span> 条</span></div>' +
+    '</a>';
   });
 
   return html;
@@ -1063,22 +1134,20 @@ function renderPatternLibs() {
 
 /** 渲染演示文稿列表 */
 function renderPresentations() {
-  const presentations = reviewDays.filter(d => d.html);
+  var presentations = reviewDays.filter(function(d) { return d.html; });
   if (presentations.length === 0) return '';
 
-  let html = `<div class="section-title"><span class="comment">//</span> 演示文稿</div>`;
+  var html = '<div class="section-title"><span class="comment">//</span> 演示文稿</div>';
 
-  presentations.forEach(d => {
-    html += `
-      <a class="presentation-card" href="${d.html}">
-        <div class="pres-icon">📊</div>
-        <div class="pres-info">
-          <div class="pres-title">${d.day} · ${d.focus}</div>
-          <div class="pres-meta">${d.html}</div>
-        </div>
-        <div class="pres-arrow">→</div>
-      </a>
-    `;
+  presentations.forEach(function(d) {
+    html += '<a class="presentation-card" href="' + d.html + '">' +
+      '<div class="pres-icon">📊</div>' +
+      '<div class="pres-info">' +
+        '<div class="pres-title">' + d.day + ' · ' + d.focus + '</div>' +
+        '<div class="pres-meta">' + d.html + '</div>' +
+      '</div>' +
+      '<div class="pres-arrow">→</div>' +
+    '</a>';
   });
 
   return html;
@@ -1086,23 +1155,17 @@ function renderPresentations() {
 
 /** 渲染页脚 */
 function renderFooter() {
-  const lastDate = reviewDays[0]?.date || '';
-  document.getElementById('footer').innerHTML = `
-    最后更新：<code>${lastDate}</code> · 
-    新增条目只需编辑 <code>&lt;script&gt;</code> 中的 <code>reviewDays</code> 或 <code>patternLibs</code> 数组
-  `;
+  var lastDate = reviewDays.length > 0 ? reviewDays[0].date : '';
+  document.getElementById('footer').innerHTML = 
+    '最后更新：<code>' + lastDate + '</code> · ' +
+    '新增条目只需编辑 <code>&lt;script&gt;</code> 中的 <code>reviewDays</code> 或 <code>patternLibs</code> 数组';
 }
 
-// ===== 初始化 =====
-(function init() {
-  renderStats();
-  document.getElementById('dayCards').innerHTML = renderReviewDays();
-  document.getElementById('patternCards').innerHTML = renderPatternLibs();
-  document.getElementById('presentationCards').innerHTML = renderPresentations();
-  renderFooter();
-  renderCalendar();
-  initCalendar();
-})();
+// =====================================================================
+// 日历渲染函数
+// =====================================================================
+
+/** 渲染日历网格 */
 function renderCalendar() {
   var grid = document.getElementById('calGrid');
   var label = document.getElementById('calMonthLabel');
@@ -1112,6 +1175,7 @@ function renderCalendar() {
 
   var weekdays = ['一','二','三','四','五','六','日'];
   var html = '';
+  
   // Weekday headers
   weekdays.forEach(function(w) {
     html += '<div class="weekday-header">' + w + '</div>';
@@ -1128,6 +1192,7 @@ function renderCalendar() {
   // Previous month days to show
   var prevMonthDays = new Date(calYear, calMonth, 0).getDate();
 
+  // Today's date string
   var today = new Date();
   var todayStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
@@ -1172,6 +1237,7 @@ function renderCalendar() {
   grid.innerHTML = html;
 }
 
+/** 日历月份导航 */
 function calNav(delta) {
   calMonth += delta;
   if (calMonth > 11) { calMonth = 0; calYear++; }
@@ -1181,45 +1247,80 @@ function calNav(delta) {
   renderCalendar();
 }
 
+/** 选择日历日期 */
 function selectCalendarDate(dateStr) {
   calSelectedDate = dateStr;
   renderCalendar();
   renderCalendarDetail(dateStr);
 }
 
+/** 渲染日历详情卡片 */
 function renderCalendarDetail(dateStr) {
   var detail = document.getElementById('calDetail');
   var d = dayMap[dateStr];
-  if (!d) { detail.innerHTML = ''; return; }
+  if (!d) { 
+    detail.innerHTML = ''; 
+    return; 
+  }
 
-  var sampleHTML = d.samples.map(function(s) {
-    return '<div class="detail-sample-item">' +
+  // 渲染样本
+  var sampleHTML = '';
+  d.samples.forEach(function(s) {
+    var langsHtml = '';
+    s.langs.forEach(function(lang) {
+      langsHtml += langBadgeCal(lang);
+    });
+    sampleHTML += '<div class="detail-sample-item">' +
       '<span class="detail-sample-prefix">▸</span>' +
       '<span class="detail-sample-name">' + s.name + '</span>' +
-      langTag(s.lang) +
-      '</div>';
-  }).join('');
+      langsHtml +
+    '</div>';
+  });
 
-  var findingHTML = d.findings.map(function(f) {
-    return '<div class="detail-finding"><span class="dot ' + f.severity + '"></span><span>' + f.text + '</span></div>';
-  }).join('');
+  // 渲染发现
+  var findingHTML = '';
+  d.findings.forEach(function(f) {
+    var dotClass = 'red';
+    if (f.type === 'good') dotClass = 'green';
+    else if (f.type === 'warn') dotClass = 'yellow';
+    findingHTML += '<div class="detail-finding">' +
+      '<span class="dot ' + dotClass + '"></span>' +
+      '<span>' + f.text + '</span>' +
+    '</div>';
+  });
 
-  var mdLink = '<a class="card-link md" onclick="openReader(\'' + d.links.md + '\'); return false;">📝 MD 笔记</a>';
+  // 渲染链接
+  var mdLink = '<a class="card-link md" href="' + d.links.md + '">📝 MD 笔记</a>';
   var htmlLink = d.links.html ? '<a class="card-link html" href="' + d.links.html + '">🖥️ HTML 演示</a>' : '';
 
   detail.innerHTML = '<div class="day-detail-card">' +
     '<div class="detail-header">' +
-      '<span class="day-badge">Day ' + d.dayNumber + '</span>' +
+      '<span class="day-badge">' + d.day + '</span>' +
       '<span class="detail-date">' + d.date + '</span>' +
+      '<span style="font-size:0.9rem;color:var(--accent-orange);margin-left:auto;">🎯 ' + d.focus + '</span>' +
     '</div>' +
     '<div class="detail-samples">' + sampleHTML + '</div>' +
     '<div class="detail-findings">' + findingHTML + '</div>' +
     '<div class="detail-links">' + mdLink + htmlLink + '</div>' +
-    '</div>';
+  '</div>';
 }
 
-// Initialize calendar: navigate to the month of the latest review entry
+/** 初始化日历：定位到最新审查日所在月份 */
+function initCalendar() {
+  if (reviewDays.length > 0) {
+    var lastDate = reviewDays[0].date; // 最新的在最前
+    var parts = lastDate.split('-');
+    calYear = parseInt(parts[0], 10);
+    calMonth = parseInt(parts[1], 10) - 1;
+  } else {
+    var now = new Date();
+    calYear = now.getFullYear();
+    calMonth = now.getMonth();
+  }
+  renderCalendar();
+}
 
+/** 切换日卡片显示/隐藏 */
 function toggleDayCards() {
   var el = document.getElementById('dayCards');
   var icon = document.getElementById('toggleIcon');
@@ -1232,15 +1333,25 @@ function toggleDayCards() {
   }
 }
 
-(function initCalendar() {
-  if (days.length > 0) {
-    var lastDate = days[days.length - 1].date;
-    var parts = lastDate.split('-');
-    calYear = parseInt(parts[0], 10);
-    calMonth = parseInt(parts[1], 10) - 1;
-  }
-  renderCalendar();
+// =====================================================================
+// 初始化入口
+// =====================================================================
 
+(function init() {
+  // 构建日历数据
+  buildDayMap();
+  
+  // 渲染各组件
+  renderStats();
+  document.getElementById('dayCards').innerHTML = renderReviewDays();
+  document.getElementById('patternCards').innerHTML = renderPatternLibs();
+  document.getElementById('presentationCards').innerHTML = renderPresentations();
+  renderFooter();
+  
+  // 初始化日历
+  initCalendar();
+})();
 </script>
+
 </body>
 </html>
