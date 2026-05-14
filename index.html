@@ -692,29 +692,6 @@ const reviewDays = [
         name: "Swift VIPER 架构（好设计）",
         langs: ["swift"],
         findings: [
-<<<<<<< Updated upstream
-          "✅ 协议抽象实现依赖解耦，可随时替换实现",
-          "✅ 职责边界清晰：View仅渲染，Interactor纯业务",
-          "✅ 测试友好：依赖注入使Mock轻而易举"
-        ]
-      },
-      {
-        name: "React 性能反模式",
-        langs: ["js"],
-        findings: [
-          "🔴 每次渲染触发 O(n·logn) 全量计算，缺少 useMemo",
-          "🔴 [...filteredUsers].sort() spread拷贝多余",
-          "🔴 缺少防抖、分页、虚拟列表等性能优化"
-        ]
-      },
-      {
-        name: "WebSocket 内存泄漏",
-        langs: ["js"],
-        findings: [
-          "🔴 useEffect 缺少清理函数，连接未正确关闭",
-          "🔴 事件监听器累积未移除",
-          "✅ 修复：return cleanup函数 + AbortController"
-=======
           "协议抽象 + 依赖注入 → Mock 测试轻而易举",
           "职责边界清晰：View/Presenter/Interactor/Router/Entity",
           {good:true, text:"可测试性驱动设计"}
@@ -736,7 +713,6 @@ const reviewDays = [
           "🔴 组件卸载时连接永不关闭",
           "roomId 变化时多个连接同时存活",
           "🔴 无重连机制"
->>>>>>> Stashed changes
         ]
       }
     ],
@@ -798,11 +774,7 @@ const reviewDays = [
         ]
       }
     ],
-<<<<<<< Updated upstream
-    md: "days/2026-05-10.md",
-=======
     md: "days/20260510.md",
->>>>>>> Stashed changes
     html: "days/2026-05-10-presentation.html"
   },
   {
@@ -811,41 +783,6 @@ const reviewDays = [
     focus: "AI生成Java并发代码的致命Bug",
     samples: [
       {
-<<<<<<< Updated upstream
-        name: "synchronizedList 的假安全感",
-        langs: ["java"],
-        findings: [
-          "🔴 Collections.synchronizedList 只保证单操作原子性",
-          "🔴 for-each 迭代+条件删除 → ConcurrentModificationException",
-          "🔴 迭代期间其他线程可能修改列表"
-        ]
-      },
-      {
-        name: "synchronized 杀死 Virtual Thread",
-        langs: ["java"],
-        findings: [
-          "🔴 synchronized 阻塞导致 Virtual Thread  pinned 到 carrier",
-          "🔴 失去虚拟线程轻量优势，线程泄漏风险",
-          "✅ 修复：ReentrantLock + tryLock 替代 synchronized"
-        ]
-      },
-      {
-        name: "双重检查锁定的幽灵",
-        langs: ["java"],
-        findings: [
-          "🔴 无 volatile 的 DCL 存在指令重排序风险",
-          "🔴 部分构造对象可见性问题",
-          "✅ 修复：volatile 或 Holder 模式"
-        ]
-      },
-      {
-        name: "Boolean陷阱 & Structured Concurrency泄漏",
-        langs: ["java"],
-        findings: [
-          "🔴 Boolean.FALSE 作为锁与所有用户共享 → 死锁风险",
-          "🔴 StructuredTaskScope 泄漏超出预期范围",
-          "✅ 使用 ThreadLocal 或显式作用域控制"
-=======
         name: "Collections.synchronizedList() 伪安全",
         langs: ["java"],
         findings: [
@@ -877,7 +814,6 @@ const reviewDays = [
         findings: [
           "🔴 无日志，生产调试困难",
           "✅ 修复：链必须有 whenComplete/handle"
->>>>>>> Stashed changes
         ]
       }
     ],
@@ -890,41 +826,6 @@ const reviewDays = [
     focus: "Spring Boot @Transactional 静默失败",
     samples: [
       {
-<<<<<<< Updated upstream
-        name: "Checked异常导致资金丢失",
-        langs: ["java"],
-        findings: [
-          "🔴 IOException是checked exception，Spring默认不回滚",
-          "🔴 from.debit已持久化，to.credit从未执行 → 资金消失",
-          "✅ 修复：rollbackFor = Exception.class 或抛RuntimeException"
-        ]
-      },
-      {
-        name: "自调用导致事务失效",
-        langs: ["java"],
-        findings: [
-          "🔴 this.方法() 绕过Spring代理，@Transactional无效",
-          "🔴 private方法无法被代理拦截",
-          "✅ 修复：通过代理调用或拆分为独立Bean"
-        ]
-      },
-      {
-        name: "REQUIRES_NEW 在连接池耗尽时死锁",
-        langs: ["java"],
-        findings: [
-          "🔴 REQUIRES_NEW 挂起当前事务，单独获取连接",
-          "🔴 高并发时连接池耗尽，新请求等待 → 死锁",
-          "⚠ 事务内远程调用导致长事务，锁住DB资源"
-        ]
-      },
-      {
-        name: "Virtual Thread + synchronized + 连接泄漏",
-        langs: ["java"],
-        findings: [
-          "🔴 synchronized 导致 Virtual Thread pinned",
-          "🔴 连接持有时间过长，连接池耗尽",
-          "✅ 修复：ReentrantLock + 超时控制"
-=======
         name: "自调用导致事务失效",
         langs: ["java"],
         findings: [
@@ -949,7 +850,6 @@ const reviewDays = [
           "🔴 默认只回滚 RuntimeException，checked exception 不回滚",
           "银行场景：转账失败但金额已扣",
           "✅ 修复：rollbackFor = Exception.class"
->>>>>>> Stashed changes
         ]
       }
     ],
