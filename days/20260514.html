@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代码审查 Day 4 - Rust安全边界 & Swift并发陷阱</title>
+<style>
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-card: #2d2d2d;
+  --bg-card-hover: #333333;
+  --border: #404040;
+  --text-primary: #d4d4d4;
+  --text-secondary: #9cdcfe;
+  --text-muted: #808080;
+  --accent-blue: #569cd6;
+  --accent-green: #6a9955;
+  --accent-yellow: #dcdcaa;
+  --accent-orange: #ce9178;
+  --accent-purple: #c586c0;
+  --accent-red: #f44747;
+  --accent-cyan: #4ec9b0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+  padding: 20px;
+}
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid var(--accent-purple);
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.header .day {
+  font-size: 14px;
+  color: var(--accent-purple);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.header h1 {
+  font-size: 28px;
+  color: var(--accent-yellow);
+  margin-bottom: 12px;
+}
+.header .meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.header .meta a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+.header .meta a:hover { text-decoration: underline; }
+.section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.section-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.section-header:hover { background: var(--bg-card-hover); }
+.section-header .icon { font-size: 20px; }
+.section-header .title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  flex: 1;
+}
+.section-header .badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--accent-red);
+  color: #fff;
+}
+.section-content {
+  padding: 20px;
+  display: block;
+}
+.section-content.collapsed { display: none; }
+.finding {
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent-red);
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 0 8px 8px 0;
+}
+.finding:last-child { margin-bottom: 0; }
+.finding-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent-orange);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.finding-title .emoji { font-size: 18px; }
+.finding-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+.finding-meta a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+.finding-meta a:hover { text-decoration: underline; }
+.code-block {
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.code-block .comment { color: #6a9955; }
+.code-block .keyword { color: #569cd6; }
+.code-block .string { color: #ce9178; }
+.code-block .function { color: #dcdcaa; }
+.code-block .macro { color: #c586c0; }
+.code-block .type { color: #4ec9b0; }
+.code-block .number { color: #b5cea8; }
+.code-block .warning { color: var(--accent-yellow); background: rgba(255,255,0,0.1); padding: 2px 4px; border-radius: 2px; }
+.code-block .danger { color: var(--accent-red); }
+.code-block .safe { color: var(--accent-green); }
+.table-wrapper {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+th {
+  background: var(--bg-card);
+  color: var(--accent-yellow);
+  font-weight: 600;
+}
+td { background: var(--bg-secondary); }
+.checklist {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 16px;
+}
+.checklist h4 {
+  color: var(--accent-cyan);
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.checklist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+.checklist input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-green);
+}
+.summary {
+  background: linear-gradient(135deg, #1a2a1a 0%, #1a3a2a 100%);
+  border: 1px solid var(--accent-green);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
+.summary h3 {
+  color: var(--accent-green);
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+.summary ul {
+  list-style: none;
+  padding: 0;
+}
+.summary li {
+  padding: 6px 0;
+  padding-left: 20px;
+  position: relative;
+  font-size: 13px;
+}
+.summary li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--accent-green);
+}
+.pattern-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 10px 0;
+}
+.pattern-card h4 {
+  color: var(--accent-purple);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.pattern-card .trigger {
+  color: var(--accent-yellow);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.pattern-card code {
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--accent-cyan);
+}
+.mobile-alert {
+  background: rgba(86, 156, 214, 0.1);
+  border: 1px solid var(--accent-blue);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--accent-blue);
+}
+@media (max-width: 600px) {
+  body { padding: 12px; }
+  .header { padding: 20px; }
+  .header h1 { font-size: 22px; }
+  .section-content { padding: 14px; }
+  .code-block { font-size: 12px; padding: 10px; }
+  table { font-size: 12px; }
+  th, td { padding: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="mobile-alert">
+📱 代码高亮在桌面端更清晰，建议使用电脑查看
+</div>
+
+<div class="header">
+  <div class="day">Day 4 · 2026-05-14</div>
+  <h1>🔍 Rust安全边界 & Swift并发陷阱</h1>
+  <div class="meta">
+    来源：
+    <a href="https://corrode.dev/blog/bugs-rust-wont-catch/" target="_blank">Bugs Rust Won't Catch</a> ·
+    <a href="https://github.com/rust-lang/rust/issues/155912" target="_blank">Rust #155912</a> ·
+    <a href="https://github.com/firebase/firebase-ios-sdk/issues/16081" target="_blank">Firebase #16081</a>
+  </div>
+</div>
+
+<!-- Section 1: TOCTOU -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🔴</span>
+    <span class="title">TOCTOU竞态条件（最大漏洞集群）</span>
+    <span class="badge">Critical</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">💥</span>
+        CVE-2026-35355: install命令的symlink攻击
+      </div>
+      <div class="finding-meta">
+        来源：<a href="https://corrode.dev/blog/bugs-rust-wont-catch/#case-study-cve-2026-35355" target="_blank">corrode.dev</a>
+      </div>
+      <div class="code-block">
+<span class="comment">// ❌ 危险：两次syscall之间可被攻击</span>
+<span class="keyword">fn</span> <span class="function">install</span>(from: <span class="type">&Path</span>, to: <span class="type">&Path</span>) {
+    <span class="macro">fs::remove_file</span>(to)<span class="danger">?</span>;           <span class="comment">// 第1次：检查文件</span>
+    <span class="comment">// ← 攻击者此时植入 symlink → /etc/shadow</span>
+    <span class="keyword">let</span> <span class="keyword">mut</span> dest = <span class="macro">File::create</span>(to)<span class="danger">?</span>;  <span class="comment">// 第2次：跟随symlink！</span>
+    <span class="macro">copy</span>(from, &<span class="keyword">mut</span> dest)<span class="danger">?</span>;
+}
+      </div>
+      <div class="code-block">
+<span class="comment">// ✅ 安全：使用create_new防止symlink</span>
+<span class="keyword">let</span> <span class="keyword">mut</span> dest = <span class="macro">OpenOptions</span>::<span class="function">new</span>()
+    .<span class="function">write</span>(<span class="macro">true</span>)
+    .<span class="function">create_new</span>(<span class="macro">true</span>)  <span class="comment">// O_EXCL：不存在则失败</span>
+    .<span class="function">open</span>(to)<span class="safe">?</span>;
+<span class="macro">copy</span>(from, &<span class="keyword">mut</span> dest)<span class="safe">?</span>;
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <tr><th>语言</th><th>默认行为</th><th>安全API</th></tr>
+          <tr><td>Rust</td><td>路径重解析</td><td><code>OpenOptions::create_new()</code></td></tr>
+          <tr><td>C</td><td>依赖具体API</td><td><code>openat()</code> 系列</td></tr>
+          <tr><td>Go</td><td>路径重解析</td><td><code>O_CREATE|O_EXCL</code></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="checklist">
+      <h4>📋 TOCTOU审查规则</h4>
+      <label><input type="checkbox"><strong>如果同一路径执行两次操作，假设这是TOCTOU Bug</strong>直到被证明安全</label>
+      <label><input type="checkbox">检查两个操作之间文件系统状态是否可变</label>
+      <label><input type="checkbox">确认第二个操作是否会跟随symlink</label>
+      <label><input type="checkbox">考虑使用文件描述符替代路径名</label>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Ghost Bits -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🔴</span>
+    <span class="title">Ghost Bits类型截断（WAF绕过）</span>
+    <span class="badge">High</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">👻</span>
+        Rust #155912: char→u8截断可绕过安全检测
+      </div>
+      <div class="finding-meta">
+        来源：<a href="https://github.com/rust-lang/rust/issues/155912" target="_blank">github.com/rust-lang/rust</a>
+      </div>
+      <div class="code-block">
+<span class="comment">// char是32位Unicode，u8只有8位</span>
+<span class="keyword">let</span> ch: <span class="type">char</span> = <span class="string">'\u{2F58}'</span>;  <span class="comment">// 爻 = 0x00002F58</span>
+<span class="keyword">let</span> b: <span class="type">u8</span> = ch <span class="keyword">as</span> <span class="type">u8</span>;       <span class="comment">// 只保留0x58 = 'X'</span>
+<span class="warning">⚠️ 编译器会警告！</span>
+      </div>
+      <div class="code-block">
+<span class="comment">// 攻击演示：WAF看到的 vs 后端实际处理的</span>
+WAF检测: <span class="string">"ħ OR ħ1ħ=ħ1"</span>  → <span class="safe">无害Unicode ✓</span>
+Rust处理: ħ (U+0127) → <span class="danger">0x27 = '\''</span>
+结果: <span class="string">"' OR '1'='1"</span>   → <span class="danger">SQL注入! ✗</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <tr><th>语言</th><th>编译器警告</th><th>风险级别</th></tr>
+          <tr><td>Go</td><td>❌ 无</td><td class="danger">Critical</td></tr>
+          <tr><td>JavaScript</td><td>❌ 无编译器</td><td class="danger">Critical</td></tr>
+          <tr><td>Java</td><td>❌ 无</td><td class="danger">High</td></tr>
+          <tr><td class="safe">Rust</td><td class="safe">✅ 有</td><td class="safe">Medium</td></tr>
+        </table>
+      </div>
+      <div class="code-block">
+<span class="comment">// ✅ 安全：使用bytes()迭代器</span>
+<span class="keyword">for</span> b <span class="keyword">in</span> s.<span class="function">bytes</span>() {  <span class="comment">// b已经是u8，无需转换</span>
+    bytes.<span class="function">push</span>(b);
+}
+
+<span class="comment">// ✅ 安全：输入验证</span>
+<span class="keyword">fn</span> <span class="function">is_valid_ascii</span>(s: <span class="type">&str</span>) -> <span class="type">bool</span> {
+    s.<span class="function">chars</span>().<span class="function">all</span>(|ch| ch.<span class="function">is_ascii</span>())
+}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Permissions -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🟡</span>
+    <span class="title">权限设置时序问题</span>
+    <span class="badge">Medium</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">⏰</span>
+        创建后设置权限存在暴露窗口
+      </div>
+      <div class="code-block">
+<span class="comment">// ❌ 危险：临时暴露窗口</span>
+<span class="macro">fs::create_dir</span>(&path)<span class="danger">?</span>;
+<span class="comment">// ← 其他用户此时可以访问！</span>
+<span class="macro">fs::set_permissions</span>(&path, <span class="macro">Permissions::from_mode</span>(<span class="number">0o700</span>))<span class="danger">?</span>;
+      </div>
+      <div class="code-block">
+<span class="comment">// ✅ 安全：创建时直接设置权限</span>
+<span class="macro">fs::create_dir</span>(&path)<span class="safe">?</span>
+    .<span class="function">with_permissions</span>(<span class="macro">Permissions::from_mode</span>(<span class="number">0o700</span>));
+
+<span class="comment">// 或使用OpenOptions</span>
+<span class="macro">OpenOptions</span>::<span class="function">new</span>()
+    .<span class="function">create</span>(<span class="macro">true</span>)
+    .<span class="function">mode</span>(<span class="number">0o700</span>)
+    .<span class="function">open</span>(&path)<span class="safe">?</span>;
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Path Comparison -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🟡</span>
+    <span class="title">路径字符串比较陷阱</span>
+    <span class="badge">Medium</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">🎯</span>
+        字符串比较不可靠：可被/../绕过
+      </div>
+      <div class="code-block">
+<span class="comment">// ❌ 危险：字符串比较</span>
+<span class="keyword">if</span> file == <span class="macro">Path::new</span>(<span class="string">"/"</span>) { ... }  <span class="comment">// /../ 也算？</span>
+
+<span class="comment">// ✅ 安全：先规范化</span>
+<span class="keyword">fn</span> <span class="function">is_root</span>(file: <span class="type">&Path</span>) -> <span class="type">bool</span> {
+    <span class="macro">matches!</span>(<span class="macro">fs::canonicalize</span>(file), <span class="macro">Ok</span>(p) <span class="keyword">if</span> p == <span class="macro">Path::new</span>(<span class="string">"/"</span>))
+}
+      </div>
+      <div class="code-block">
+<span class="comment">// 好玩的bug：rm拒绝"."但接受".///"</span>
+<span class="macro">rm</span> .     <span class="danger">❌ Invalid input</span>
+<span class="macro">rm</span> ./    <span class="safe">✅ 删了当前目录</span>
+<span class="macro">rm</span> .///  <span class="safe">✅ 删了当前目录</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 5: Unwrap/Expect -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🟡</span>
+    <span class="title">unwrap/expect的DoS风险</span>
+    <span class="badge">Medium</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">💣</span>
+        任意输入可导致panic→进程崩溃
+      </div>
+      <div class="code-block">
+<span class="comment">// ❌ 危险：非UTF-8文件名导致崩溃</span>
+<span class="keyword">let</span> path = <span class="macro">std::str::from_utf8</span>(bytes)
+    .<span class="function">expect</span>(<span class="string">"Could not parse..."</span>);
+<span class="comment">// 攻击者创建非UTF-8文件名 → panic → cron job挂掉</span>
+      </div>
+      <div class="code-block">
+<span class="comment">// ✅ 安全：优雅错误处理</span>
+<span class="keyword">match</span> <span class="macro">std::str::from_utf8</span>(bytes) {
+    <span class="macro">Ok</span>(s) => <span class="function">process</span>(s),
+    <span class="macro">Err</span>(e) => <span class="keyword">return</span> <span class="macro">Err</span>(<span class="type">ParseError::InvalidUtf8</span>(e)),
+}
+      </div>
+      <div class="code-block">
+<span class="comment">// 建议的Clippy配置</span>
+[<span class="type">lints</span>.<span class="type">clippy</span>]
+<span class="macro">unwrap_used</span> = <span class="string">"warn"</span>
+<span class="macro">expect_used</span> = <span class="string">"warn"</span>
+<span class="macro">panic</span> = <span class="string">"warn"</span>
+<span class="macro">indexing_slicing</span> = <span class="string">"warn"</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 6: Swift Concurrency -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🔴</span>
+    <span class="title">Swift并发陷阱</span>
+    <span class="badge">High</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">⚡</span>
+        asyncLet任务完成竞态（Firebase #16081）
+      </div>
+      <div class="finding-meta">
+        来源：<a href="https://github.com/firebase/firebase-ios-sdk/issues/16081" target="_blank">github.com/firebase/firebase-ios-sdk</a>
+      </div>
+      <div class="code-block">
+<span class="comment">// Firebase HTTPSCallable.call()中的崩溃</span>
+<span class="keyword">async let</span> task1 = <span class="type">HTTPSCallable</span>.<span class="function">call</span>()  <span class="comment">// 启动异步任务</span>
+<span class="keyword">async let</span> task2 = <span class="function">anotherCall</span>()          <span class="comment">// 又一个异步任务</span>
+<span class="comment">// ...</span>
+<span class="keyword">let</span> results = <span class="keyword">await</span> (task1, task2)     <span class="comment">// 等待时序问题!</span>
+
+<span class="comment">// 崩溃堆栈:</span>
+<span class="danger">swift_Concurrency_fatalError</span>
+<span class="danger">asyncLet_finish_after_task_completion</span>  <span class="comment">// 任务完成后销毁时崩溃</span>
+<span class="type">HTTPSCallable</span>.<span class="function">call</span>()
+      </div>
+    </div>
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">🎭</span>
+        Actor Isolation Violation（Swift 6.0）
+      </div>
+      <div class="code-block">
+<span class="comment">// ❌ 危险：@preconcurrency掩盖隔离违规</span>
+<span class="macro">@preconcurrency</span>
+<span class="keyword">func</span> <span class="function">syncWorkouts</span>(completion: <span class="macro">@escaping</span> (<span class="type">Result</span><<span class="type">Void</span>, <span class="type">Error</span>>) -> <span class="type">Void</span>) {
+    <span class="macro">backgroundQueue</span>.<span class="function">async</span> {
+        <span class="keyword">let</span> cache = <span class="type">UserWorkoutCache</span>.shared  <span class="comment">// 非Sendable!</span>
+        cache.<span class="function">store</span>(workout)  <span class="danger">// 跨Actor访问</span>
+    }
+}
+      </div>
+      <div class="code-block">
+<span class="comment">// ✅ 安全：使用Actor</span>
+<span class="keyword">actor</span> <span class="type">UserWorkoutCache</span> {
+    <span class="keyword">func</span> <span class="function">store</span>(_ workout: <span class="type">Workout</span>) { ... }
+}
+
+<span class="comment">// ✅ 安全：使用async/await</span>
+<span class="keyword">func</span> <span class="function">syncWorkouts</span>() <span class="keyword">async</span> <span class="keyword">throws</span> {
+    <span class="keyword">let</span> cache = <span class="type">UserWorkoutCache</span>.shared
+    <span class="keyword">await</span> cache.<span class="function">store</span>(workout)  <span class="comment">// 显式Actor跳转</span>
+}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Cross-Language Wisdom -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">🌐</span>
+    <span class="title">跨语言设计智慧</span>
+    <span class="badge">Info</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">🤝</span>
+        信任边界跨越原则
+      </div>
+      <div class="code-block">
+<span class="comment">// ❌ 危险：chroot后加载用户信息</span>
+<span class="macro">chroot</span>(new_root)<span class="danger">?</span>;           <span class="comment">// 进入攻击者文件系统</span>
+<span class="keyword">let</span> user = <span class="function">get_user_by_name</span>(name)<span class="danger">?</span>;  <span class="comment">// 加载攻击者的.so!</span>
+
+<span class="comment">// ✅ 安全：跨越前解析</span>
+<span class="keyword">let</span> user = <span class="function">get_user_by_name</span>(name)<span class="safe">?</span>;  <span class="comment">// 在安全侧解析</span>
+<span class="macro">chroot</span>(new_root)<span class="safe">?</span>;
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-top:12px;">
+        <strong>Rule: Cross Before You Use</strong> — 一旦跨越信任边界，每个库调用都可能是攻击者的代码
+      </p>
+    </div>
+    <div class="finding">
+      <div class="finding-title">
+        <span class="emoji">⚠️</span>
+        Bug-for-Bug兼容性是安全特性
+      </div>
+      <div class="code-block">
+<span class="comment">// kill -1 在GNU和uutils中有不同语义</span>
+GNU:     <span class="macro">kill</span> -<span class="number">1</span> → 请求信号1的PID
+uutils:  <span class="macro">kill</span> -<span class="number">1</span> → 发送给PID -1 → <span class="danger">kill所有可见进程!</span>
+
+<span class="comment">// 一个typo变成系统级kill开关</span>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-top:12px;">
+        <strong>Hyrum's Law</strong>: 可观测的行为都会被依赖。行为兼容性是安全特性。
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 8: Pattern Library -->
+<div class="section">
+  <div class="section-header" onclick="toggle(this)">
+    <span class="icon">📚</span>
+    <span class="title">新增审查模式库</span>
+    <span class="badge">New</span>
+    <span class="arrow">▼</span>
+  </div>
+  <div class="section-content">
+    <div class="pattern-card">
+      <h4>🔄 双重Syscall检查</h4>
+      <div class="trigger">触发条件：代码对同一路径执行两个操作</div>
+      <ul style="font-size:12px; color:var(--text-secondary); padding-left:16px;">
+        <li>两个操作之间是否可能修改文件系统？</li>
+        <li>第二个操作是否会跟随symlink？</li>
+        <li>是否可以使用原子操作替代？</li>
+      </ul>
+    </div>
+    <div class="pattern-card">
+      <h4>🎭 类型边界守卫</h4>
+      <div class="trigger">触发条件：char/Unicode到字节的转换</div>
+      <ul style="font-size:12px; color:var(--text-secondary); padding-left:16px;">
+        <li>是否有显式的<code>#[allow(trivial_casts)]</code>？</li>
+        <li>是否有输入验证（ASCII范围）？</li>
+        <li>是否可以使用<code>bytes()</code>迭代器替代？</li>
+      </ul>
+    </div>
+    <div class="pattern-card">
+      <h4>🏰 信任边界标记</h4>
+      <div class="trigger">触发条件：跨越信任边界（chroot、sandbox、权限提升）</div>
+      <ul style="font-size:12px; color:var(--text-secondary); padding-left:16px;">
+        <li>边界前的数据是否已解析完成？</li>
+        <li>边界后的库调用是否可控？</li>
+        <li>是否有NSS/动态库加载风险？</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary">
+  <h3>📝 今日关键教训</h3>
+  <ul>
+    <li><strong>Rust的borrow checker不保护TOCTOU</strong>：它只在内存安全层面有效，文件系统状态在外部</li>
+    <li><strong>编译器警告是最后防线</strong>：Ghost Bits漏洞需要显式忽略警告才能利用</li>
+    <li><strong>Swift 6.0的严格并发检查</strong>：@preconcurrency是技术债，不是解决方案</li>
+    <li><strong>跨语言智慧</strong>：TOCTOU是所有语言的共同问题，但解决API不同</li>
+    <li><strong>信任边界原则</strong>：一旦跨越边界，每个库调用都可能是攻击者的代码</li>
+  </ul>
+</div>
+
+<script>
+function toggle(header) {
+  var content = header.nextElementSibling;
+  var arrow = header.querySelector('.arrow');
+  if (content.classList.contains('collapsed')) {
+    content.classList.remove('collapsed');
+    arrow.textContent = '▼';
+  } else {
+    content.classList.add('collapsed');
+    arrow.textContent = '▶';
+  }
+}
+</script>
+
+</body>
+</html>

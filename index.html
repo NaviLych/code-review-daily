@@ -648,6 +648,60 @@ const reviewDays = [
     html: "days/20260513.html"
   },
   {
+    day: "Day8",
+    date: "2026-05-14",
+    focus: "Rust安全边界 & Swift并发陷阱",
+    samples: [
+      {
+        name: "Rust TOCTOU竞态条件（44 CVE来源：uutils审计）",
+        langs: ["rust"],
+        findings: [
+          "最大漏洞集群：两次syscall之间的竞态条件，攻击者可植入symlink",
+          "✅ 修复：OpenOptions::create_new() 防止symlink跟随",
+          {good:true, text:"核心教训：Rust borrow checker不保护文件系统状态"}
+        ]
+      },
+      {
+        name: "Ghost Bits漏洞：char→u8截断绕过WAF",
+        langs: ["rust"],
+        findings: [
+          "ħ (U+0127) → 0x27 = '\\'' (单引号) → SQL注入绕过WAF",
+          "Rust相对安全：编译器显式警告 vs Go/Java无警告",
+          "✅ 修复：使用bytes()迭代器替代char as u8"
+        ]
+      },
+      {
+        name: "Rust panic即DoS：unwrap处理外部输入",
+        langs: ["rust"],
+        findings: [
+          "非UTF-8文件名 → expect() panic → cron job挂掉",
+          "✅ 修复：优雅错误处理 match {... Ok => ... Err => ...}",
+          {good:true, text:"Clippy: unwrap_used/expect_used = warn"}
+        ]
+      },
+      {
+        name: "Swift asyncLet竞态（Firebase #16081）",
+        langs: ["swift"],
+        findings: [
+          "asyncLet任务完成时序问题 → swift_Concurrency_fatalError",
+          "@preconcurrency掩盖actor isolation违规（Swift 6.0）",
+          {good:true, text:"✅ 修复：使用Actor + async/await替代@preconcurrency"}
+        ]
+      },
+      {
+        name: "跨语言智慧：信任边界跨越",
+        langs: ["rust", "go", "swift"],
+        findings: [
+          "Rule: Cross Before You Use — 跨越信任边界前完成所有解析",
+          "chroot后get_user_by_name加载攻击者的.so",
+          "Hyrum's Law：行为兼容性是安全特性"
+        ]
+      }
+    ],
+    md: "days/20260514.md",
+    html: "days/20260514.html"
+  },
+  {
     day: "Day7",
     date: "2026-05-12",
     focus: "跨语言设计模式：泛型、并发与内存管理",

@@ -83,6 +83,100 @@ tokio::spawn(async move {
 | **死锁** | 循环等待 | 固定锁顺序 |
 | **goroutine泄露** | 协程未结束 | context取消 |
 
+### 2.4 Java v22+ 并发审查（AI生成代码重灾区）
+
+#### Collections选择决策表
+
+| 场景 | ❌ AI常生成的错误选择 | ✅ 正确选择 |
+|------|---------------------|-------------|
+| 复合操作（遍历+删除） | `Collections.synchronizedList()` | `ConcurrentLinkedQueue` |
+| 读多写少+需索引 | `synchronizedList()` | `CopyOnWriteArrayList` |
+| 高并发Map | `Hashtable` | `ConcurrentHashMap` |
+| 需要阻塞取元素 | `List + wait/notify` | `BlockingQueue` |
+
+#### Virtual Threads 雷区
+
+```java
+// ❌ 致命错误: synchronized阻塞carrier线程
+public class BadService {
+    public synchronized void doSomething() { /* ... */ }
+}
+
+// ✅ 正确做法: ReentrantLock + tryLock超时
+public class GoodService {
+    private final ReentrantLock lock = new ReentrantLock();
+    public void doSomething() throws InterruptedException {
+        if (lock.tryLock(5, TimeUnit.SECONDS)) {
+            try { /* ... */ }
+            finally { lock.unlock(); }
+        }
+    }
+}
+```
+
+#### StructuredTaskScope 生命周期的关键
+
+```java
+// ❌ AI常漏掉join - 导致Virtual Thread泄漏
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    scope.fork(() -> task());
+    // 缺少 scope.join() 和 scope.throwIfFailed()
+}
+
+// ✅ 完整模式
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    List<Subtask<T>> tasks = items.stream()
+        .map(item -> scope.fork(() -> process(item)))
+        .toList();
+    scope.join();           // 必须等待完成
+    scope.throwIfFailed();  // 必须传播异常
+    return tasks.stream().map(Subtask::get).toList();
+}
+```
+
+#### CompletableFuture 异常处理模板
+
+```java
+// ❌ AI常省略异常处理 - 错误静默消失
+.thenApply(user -> generateReport(user));
+
+// ✅ 必须添加异常处理
+.thenApply(user -> generateReport(user))
+.whenComplete((result, ex) -> {     // 日志记录
+    if (ex != null) log.error("Failed", ex);
+})
+.handle((result, ex) -> {           // 恢复或返回错误
+    if (ex != null) return "Error: " + ex.getMessage();
+    return result;
+});
+```
+
+#### 懒初始化的正确姿势
+
+```java
+// ❌ Double-checked locking: 过度复杂
+private volatile Connection conn;
+if (conn == null) {
+    synchronized (this) {
+        if (conn == null) conn = create();
+    }
+}
+
+// ✅ Holder模式: 让JVM处理线程安全
+private static class Holder {
+    static final Connection INSTANCE = createConnection();
+}
+public Connection get() { return Holder.INSTANCE; }
+```
+
+#### AI生成Java并发代码必查清单
+
+- [ ] 是否使用`Collections.synchronized*()`？检查复合操作
+- [ ] 是否在Virtual Threads场景使用`synchronized`？
+- [ ] `CompletableFuture`链是否有`whenComplete`/`handle`？
+- [ ] `StructuredTaskScope`是否调用了`scope.join()`？
+- [ ] 懒初始化是否需要？考虑Holder模式替代DCL
+
 ---
 
 ## 三、泛型设计审查模式
@@ -167,3 +261,181 @@ func bad() {
 - **Day 1**: 函数式编程反模式、Swift错误处理模式
 - **Day 2**: AI生成代码Bug分类、Rust vs Go并发对比、TS泛型设计
 - **Day 3**: 待补充...
+- **Day 4**: Rust TOCTOU/Ghost Bits/Swift并发陷阱（来源：uutils审计44 CVE）
+
+---
+
+## 六、Rust系统编程审查模式（2026-05-14新增）
+
+### 6.1 TOCTOU竞态条件
+
+> **核心原则：同一路径执行两次操作时，假设存在TOCTOU Bug直到被证明安全**
+
+```rust
+// ❌ 危险：两次syscall之间可被攻击
+fs::remove_file(to)?;              // 第1次：检查
+// ← 攻击者可在此植入symlink
+let mut dest = File::create(to)?; // 第2次：跟随symlink！
+copy(from, &mut dest)?;
+
+// ✅ 安全：使用create_new防止symlink
+let mut dest = OpenOptions::new()
+    .write(true)
+    .create_new(true)  // O_EXCL：不存在则失败
+    .open(to)?;
+```
+
+**审查要点**：
+- [ ] 代码是否对同一路径执行两个操作？
+- [ ] 两个操作之间文件系统状态是否可变？
+- [ ] 第二个操作是否会跟随symlink？
+- [ ] 是否可以使用文件描述符替代路径名？
+
+### 6.2 类型边界检查
+
+> **核心原则：char/Unicode到字节的转换要格外小心**
+
+```rust
+// ❌ 危险：char截断，WAF绕过攻击
+#[allow(trivial_casts)]  // 需要显式忽略警告！
+for ch in s.chars() {
+    bytes.push(ch as u8);  // ħ (U+0127) → 0x27 = '\''
+}
+
+// ✅ 安全：使用bytes()迭代器
+for b in s.bytes() {  // b已经是u8，无需转换
+    bytes.push(b);
+}
+
+// ✅ 安全：输入验证
+fn is_valid_ascii(s: &str) -> bool {
+    s.chars().all(|ch| ch.is_ascii())
+}
+```
+
+**审查要点**：
+- [ ] 是否有`#[allow(trivial_casts)]`？
+- [ ] 是否有输入验证（ASCII范围）？
+- [ ] 是否可以使用`bytes()`迭代器替代？
+
+### 6.3 权限设置时序
+
+> **核心原则：权限应在创建时设置，而不是之后修改**
+
+```rust
+// ❌ 危险：创建后设置，存在暴露窗口
+fs::create_dir(&path)?;
+fs::set_permissions(&path, Permissions::from_mode(0o700))?;
+// ← 其他用户此时可以访问！
+
+// ✅ 安全：创建时设置
+fs::create_dir(&path)?
+    .with_permissions(Permissions::from_mode(0o700));
+// 或使用OpenOptions::mode()
+```
+
+### 6.4 路径比较安全
+
+> **核心原则：字符串比较不可靠，必须先规范化**
+
+```rust
+// ❌ 危险：可被/../绕过
+if file == Path::new("/") { ... }
+
+// ✅ 安全：规范化后再比较
+fn is_root(file: &Path) -> bool {
+    matches!(fs::canonicalize(file), Ok(p) if p == Path::new("/"))
+}
+```
+
+### 6.5 panic即DoS
+
+> **核心原则：外部输入导致的unwrap/expect是DoS漏洞**
+
+```rust
+// ❌ 危险：攻击者可导致panic
+let path = std::str::from_utf8(bytes)
+    .expect("Could not parse...");  // 非UTF-8文件名 → 崩溃
+
+// ✅ 安全：优雅错误处理
+match std::str::from_utf8(bytes) {
+    Ok(s) => process(s),
+    Err(e) => return Err(ParseError::InvalidUtf8(e)),
+}
+```
+
+### 6.6 信任边界跨越
+
+> **核心原则：跨越信任边界前完成所有解析**
+
+```rust
+// ❌ 危险：chroot后加载用户信息
+chroot(new_root)?;                  // 进入攻击者文件系统
+let user = get_user_by_name(name)?; // 加载攻击者的.so！
+
+// ✅ 安全：跨越前解析
+let user = get_user_by_name(name)?;  // 在安全侧解析
+chroot(new_root)?;
+```
+
+### 6.7 Rust审查checklist
+
+- [ ] **TOCTOU检查**：同一路径是否执行两次操作？
+- [ ] **权限时序**：权限是否在创建时设置？
+- [ ] **路径比较**：是否使用`canonicalize`？
+- [ ] **panic风险**：是否有`unwrap`/`expect`处理外部输入？
+- [ ] **字节流处理**：是否使用`OsStr`/`&[u8]`？
+- [ ] **allow属性**：`#[allow(...)]`是否经过审视？
+- [ ] **信任边界**：跨越边界前是否完成所有解析？
+
+---
+
+## 七、Swift并发审查模式（2026-05-14新增）
+
+### 7.1 asyncLet任务管理
+
+> **核心原则：asyncLet变量必须在作用域内正确await**
+
+```swift
+// ❌ 危险：asyncLet任务完成竞态
+async let task1 = HTTPSCallable.call()
+async let task2 = anotherCall()
+// 等待时序问题可能导致 swift_Concurrency_fatalError
+
+// ✅ 安全：确保任务正确await
+let (r1, r2) = await (task1, task2)
+```
+
+### 7.2 Actor Isolation
+
+> **核心原则：跨Actor访问必须显式await**
+
+```swift
+// ❌ 危险：@preconcurrency掩盖隔离违规
+@preconcurrency
+func syncWorkouts(completion: @escaping (Result<Void, Error>) -> Void) {
+    backgroundQueue.async {
+        let cache = UserWorkoutCache.shared  // 非Sendable!
+        cache.store(workout)  // 跨Actor访问
+    }
+}
+
+// ✅ 安全：使用Actor
+actor UserWorkoutCache {
+    func store(_ workout: Workout) { ... }
+}
+
+// ✅ 安全：使用async/await
+func syncWorkouts() async throws {
+    let cache = UserWorkoutCache.shared
+    await cache.store(workout)  // 显式Actor跳转
+}
+```
+
+### 7.3 Swift并发审查checklist
+
+- [ ] 是否正确使用`@MainActor`？
+- [ ] 是否有`@preconcurrency`掩盖问题？
+- [ ] `asyncLet`变量是否在作用域内正确await？
+- [ ] 跨Actor调用是否显式使用`await`？
+- [ ] Sendable类型是否正确传递？
