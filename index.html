@@ -603,6 +603,52 @@ body {
  */
 const reviewDays = [
   {
+    day: "Day9",
+    date: "2026-05-15",
+    focus: "Java并发陷阱 & Spring Boot生产级配置误区",
+    samples: [
+      {
+        name: "AI生成Java并发三大致命Bug",
+        langs: ["java"],
+        findings: [
+          "🔴 双重检查锁定无volatile → 部分构造对象暴露",
+          "🔴 Boolean.FALSE作为锁对象 → 全应用共享锁",
+          "🔴 synchronized内Thread.sleep() → 死锁",
+          {good:true, text:"✅ 修复：volatile/静态Holder/Object锁/wait()"}
+        ]
+      },
+      {
+        name: "Spring Boot连接池耗尽 (438/500中招)",
+        langs: ["java"],
+        findings: [
+          "🔴 HikariCP默认10连接，本地永远够用，生产必崩",
+          "💰 真实案例：20万用户应用每周一9点准时崩溃",
+          "✅ 修复：按并发配置maximum-pool-size"
+        ]
+      },
+      {
+        name: "@Transactional滥用 (381/500中招)",
+        langs: ["java"],
+        findings: [
+          "🔴 外部接口调用加事务 → 占用连接22秒不释放",
+          "💰 凌晨故障：每分钟亏损4000美元",
+          "✅ 修复：仅在数据库操作上加事务"
+        ]
+      },
+      {
+        name: "N+1查询 + 异常静默吞噬",
+        langs: ["java"],
+        findings: [
+          "🔴 100条订单 = 1+100=101次查询，500并发直接崩",
+          "🔴 catch只打印日志不回滚 → 扣费不发货",
+          "✅ 修复：JOIN FETCH + 异常向上抛出"
+        ]
+      }
+    ],
+    md: "days/20260515.md",
+    html: "days/20260515.html"
+  },
+  {
     day: "Day8",
     date: "2026-05-13",
     focus: "跨语言错误处理与并发安全",

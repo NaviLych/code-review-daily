@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day9 · Java并发陷阱 & Spring Boot配置误区</title>
+<style>
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-card: #2d2d2d;
+  --bg-code: #1a1a1a;
+  --border: #404040;
+  --text-primary: #d4d4d4;
+  --text-muted: #808080;
+  --accent-red: #f44747;
+  --accent-yellow: #dcdcaa;
+  --accent-green: #6a9955;
+  --accent-blue: #569cd6;
+  --accent-orange: #ce9178;
+  --accent-purple: #c586c0;
+  --accent-cyan: #4ec9b0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+/* ===== 顶部 ===== */
+.top-bar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.top-bar h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-yellow);
+}
+.top-bar .meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ===== 容器 ===== */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ===== 章节 ===== */
+.section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-orange);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.subsection {
+  margin: 20px 0;
+}
+.subsection-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  margin-bottom: 12px;
+}
+
+/* ===== 代码块 ===== */
+.code-block {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.code-block .keyword { color: var(--accent-purple); }
+.code-block .type { color: var(--accent-cyan); }
+.code-block .string { color: var(--accent-orange); }
+.code-block .comment { color: var(--text-muted); font-style: italic; }
+.code-block .number { color: #b5cea8; }
+.code-block .annotation { color: var(--accent-yellow); }
+
+/* ===== 标签 ===== */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.badge-red { background: rgba(244, 71, 71, 0.2); color: var(--accent-red); }
+.badge-green { background: rgba(106, 153, 85, 0.2); color: var(--accent-green); }
+.badge-yellow { background: rgba(220, 220, 170, 0.2); color: var(--accent-yellow); }
+.badge-blue { background: rgba(86, 156, 214, 0.2); color: var(--accent-blue); }
+
+/* ===== 卡片 ===== */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+.card-danger { border-left: 4px solid var(--accent-red); }
+.card-success { border-left: 4px solid var(--accent-green); }
+
+/* ===== 表格 ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  text-align: left;
+}
+th {
+  background: var(--bg-secondary);
+  color: var(--accent-yellow);
+}
+td { font-size: 13px; }
+
+/* ===== 列表 ===== */
+ul, ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+li { margin: 8px 0; }
+
+/* ===== 来源 ===== */
+.source-link {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-size: 13px;
+  margin: 8px 8px 8px 0;
+  transition: background 0.2s;
+}
+.source-link:hover {
+  background: var(--accent-blue);
+  color: #fff;
+}
+
+/* ===== 页脚 ===== */
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+  .container { padding: 16px; }
+  .section { padding: 16px; }
+  .code-block { font-size: 12px; padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>📋 Day9 · Java并发陷阱 & Spring Boot配置误区</h1>
+  <div class="meta">2026-05-15 · AI生成代码审查</div>
+</div>
+
+<div class="container">
+
+<!-- 主题 -->
+<div class="section">
+  <div class="section-title">🎯 今日主题</div>
+  <p>审查AI生成Java代码的三大并发陷阱 + Spring Boot生产级配置七大死亡模式</p>
+  <div style="margin-top:16px;">
+    <span class="badge badge-red">🔴 高危</span>
+    <span class="badge badge-yellow">⚠️ 易忽略</span>
+    <span class="badge badge-green">✅ 可修复</span>
+  </div>
+</div>
+
+<!-- 来源 -->
+<div class="section">
+  <div class="section-title">📚 来源</div>
+  <a class="source-link" href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot">SonarSource: Java并发盲点</a>
+  <a class="source-link" href="https://juejin.cn/post/7636555069221371931">掘金: 500个Spring Boot代码库审查</a>
+</div>
+
+<!-- 并发Bug -->
+<div class="section">
+  <div class="section-title">🔴 Part 1: AI生成Java并发三大致命Bug</div>
+
+  <div class="subsection">
+    <div class="subsection-title">1.1 双重检查锁定陷阱 (S2168)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> 没有volatile修饰，JVM可重排序赋值和构造
+    </div>
+    <div class="code-block">
+<span class="keyword">public class</span> ResourceFactory {
+    <span class="keyword">private static</span> Resource resource;
+
+    <span class="keyword">public static</span> Resource getInstance() {
+        <span class="keyword">if</span> (resource == <span class="keyword">null</span>) {
+            <span class="keyword">synchronized</span> (ResourceFactory.<span class="keyword">class</span>) {
+                <span class="keyword">if</span> (resource == <span class="keyword">null</span>)
+                    resource = <span class="keyword">new</span> Resource();  <span class="comment">// 🔴 可能返回部分构造对象</span>
+            }
+        }
+        <span class="keyword">return</span> resource;
+    }
+}</div>
+
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 使用静态内部类Holder，利用JLS类初始化保证
+    </div>
+    <div class="code-block">
+<span class="keyword">private static class</span> ResourceHolder {
+    <span class="keyword">public static final</span> Resource resource = <span class="keyword">new</span> Resource();
+}
+
+<span class="keyword">public static</span> Resource getResource() {
+    <span class="keyword">return</span> ResourceHolder.resource;  <span class="comment">// ✅ JLS保证线程安全</span>
+}</div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">1.2 基于值类的同步陷阱 (S1860)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> Boolean.FALSE/Integer缓存导致全应用共享同一把锁
+    </div>
+    <div class="code-block">
+<span class="keyword">private static final</span> Boolean bLock = Boolean.FALSE;
+
+<span class="keyword">public void</span> doSomething() {
+    <span class="keyword">synchronized</span> (bLock) {  <span class="comment">// 🔴 全应用所有Boolean.FALSE都指向同一对象</span>
+        <span class="comment">// 与第三方库冲突 → 未知死锁</span>
+    }
+}</div>
+
+    <p style="margin:12px 0;color:var(--text-muted);">同样有问题的类型：Integer(-128~127), String字面量, List.of(), java.time类型</p>
+
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 使用专用Object实例
+    </div>
+    <div class="code-block">
+<span class="keyword">private static final</span> Object lock = <span class="keyword">new</span> Object();  <span class="comment">// ✅ 专用锁对象</span>
+
+<span class="keyword">public void</span> doSomething() {
+    <span class="keyword">synchronized</span> (lock) {
+        <span class="comment">// critical section</span>
+    }
+}</div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">1.3 持有锁时Thread.sleep() (S2276)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> sleep()不释放monitor锁，导致其他等待线程全部冻结
+    </div>
+    <div class="code-block">
+<span class="keyword">public void</span> doSomething() {
+    <span class="keyword">synchronized</span> (monitor) {
+        <span class="keyword">while</span> (!ready()) {
+            Thread.<span class="method">sleep</span>(<span class="number">200</span>);  <span class="comment">// 🔴 持有锁休眠！</span>
+        }
+        process();
+    }
+}</div>
+
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 使用Object.wait()释放锁
+    </div>
+    <div class="code-block">
+<span class="keyword">public void</span> doSomething() {
+    <span class="keyword">synchronized</span> (monitor) {
+        <span class="keyword">while</span> (!ready()) {
+            monitor.<span class="method">wait</span>(<span class="number">200</span>);  <span class="comment">// ✅ 释放锁，等待</span>
+        }
+        process();
+    }
+}</div>
+  </div>
+</div>
+
+<!-- Spring Boot陷阱 -->
+<div class="section">
+  <div class="section-title">⚠️ Part 2: Spring Boot生产级七大死亡模式</div>
+
+  <div class="subsection">
+    <div class="subsection-title">2.1 数据库连接池耗尽 (438/500中招)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> HikariCP默认10连接，本地测试永远够用，生产必崩
+    </div>
+    <div class="code-block">
+<span class="comment"># 问题：默认配置</span>
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: <span class="number">10</span>  <span class="comment"># 🔴 10个连接撑不住并发</span></div>
+    <div class="code-block">
+<span class="comment"># ✅ 修复：按并发配置</span>
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: <span class="number">50</span>
+      connection-timeout: <span class="number">30000</span></div>
+    <div class="card" style="border-left:4px solid var(--accent-orange);">
+      💰 真实案例：20万用户SaaS每周一9点准时崩溃，6周排查，4秒修复，损失18万美元
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">2.2 @Transactional滥用 (381/500中招)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> 事务期间不释放数据库连接，外部接口调用耗时长
+    </div>
+    <div class="code-block">
+<span class="annotation">@Service</span>
+<span class="keyword">public class</span> PaymentService {
+    <span class="annotation">@Transactional</span>  <span class="comment">// 🔴 给外部接口加事务！</span>
+    <span class="keyword">public void</span> processPayment(Order order) {
+        callExternalAPI1();  <span class="comment">// 耗时2-4秒，持有连接</span>
+        callExternalAPI2();  <span class="comment">// 再占2-4秒</span>
+        <span class="comment">// 单次事务占用连接长达22秒</span>
+    }
+}</div>
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 仅在真正的数据库操作上加事务，外部接口调用不加
+    </div>
+    <div class="code-block">
+<span class="annotation">@Service</span>
+<span class="keyword">public class</span> PaymentService {
+    <span class="annotation">@Transactional</span>  <span class="comment">// ✅ 仅数据库操作</span>
+    <span class="keyword">public void</span> savePaymentRecord(Payment p) {
+        paymentRepository.save(p);
+    }
+    
+    <span class="keyword">public void</span> processPayment(Order order) {
+        <span class="comment">// ✅ 外部调用不加事务</span>
+        callExternalAPI1();
+        savePaymentRecord(...);
+    }
+}</div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">2.3 N+1查询灾难 (413/500中招)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> 懒加载+循环访问 = 指数级查询爆炸
+    </div>
+    <div class="code-block">
+<span class="annotation">@GetMapping</span>(<span class="string">"/orders"</span>)
+<span class="keyword">public</span> List&lt;OrderDTO&gt; getOrders() {
+    List&lt;Order&gt; orders = orderRepository.<span class="method">findAll</span>();  <span class="comment">// 1次查询</span>
+    <span class="keyword">return</span> orders.stream()
+        .<span class="method">map</span>(<span class="keyword">this</span>::toDTO);  <span class="comment">// 每条触发getUser() = +100次</span>
+}
+<span class="comment">// 100条订单 = 1 + 100 = 101次数据库请求</span></div>
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 使用JOIN FETCH急加载
+    </div>
+    <div class="code-block">
+<span class="annotation">@Query</span>(<span class="string">"SELECT o FROM Order o JOIN FETCH o.user"</span>)
+List&lt;Order&gt; <span class="method">findAllWithUser</span>();</div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">2.4 异常静默吞噬 (267/500中招)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> catch后只打印日志，程序继续执行，导致静默数据错乱
+    </div>
+    <div class="code-block">
+<span class="keyword">try</span> {
+    paymentService.<span class="method">charge</span>(user, amount);  <span class="comment">// 支付失败</span>
+} <span class="keyword">catch</span> (PaymentException e) {
+    log.<span class="method">error</span>(<span class="string">"支付失败"</span>, e);
+    <span class="comment">// 🔴 异常被吞，程序继续</span>
+}
+orderService.<span class="method">complete</span>(order);  <span class="comment">// 用户扣费，订单却完成</span>
+<span class="comment">// 结果：扣费但不发货，6个月9000笔问题订单</span></div>
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 异常必须向上抛出或明确业务兜底
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">2.5 Jackson无限递归 (229/500中招)</div>
+    <div class="card card-danger">
+      <span class="badge badge-red">🔴 危险</span> 双向@OneToMany + @ManyToOne → 序列化栈溢出
+    </div>
+    <div class="code-block">
+<span class="annotation">@Entity</span>
+<span class="keyword">public class</span> Order {
+    <span class="annotation">@OneToMany</span>(mappedBy = <span class="string">"order"</span>)
+    List&lt;OrderItem&gt; items;  <span class="comment">// 🔴 双向关联</span>
+}
+
+<span class="annotation">@Entity</span>
+<span class="keyword">public class</span> OrderItem {
+    <span class="annotation">@ManyToOne</span>
+    Order order;  <span class="comment">// 反向引用</span>
+}
+<span class="comment">// Order → items → order → items → ... → StackOverflow!</span></div>
+    <div class="card card-success">
+      <span class="badge badge-green">✅ 修复</span> 使用@JsonIgnore忽略反向关联
+    </div>
+    <div class="code-block">
+<span class="annotation">@OneToMany</span>(mappedBy = <span class="string">"order"</span>)
+<span class="annotation">@JsonIgnore</span>  <span class="comment">// ✅ 忽略反向关联</span>
+List&lt;OrderItem&gt; items;</div>
+  </div>
+</div>
+
+<!-- 跨语言对比 -->
+<div class="section">
+  <div class="section-title">🌐 跨语言设计智慧</div>
+  <table>
+    <tr><th>模式</th><th>Java</th><th>Go</th><th>Rust</th><th>Swift</th></tr>
+    <tr>
+      <td>单例懒加载</td>
+      <td>volatile/sync/Holder</td>
+      <td>sync.Once</td>
+      <td>OnceCell</td>
+      <td>static+dispatch_once</td>
+    </tr>
+    <tr>
+      <td>锁对象选择</td>
+      <td>避免Boolean缓存</td>
+      <td>原生无此问题</td>
+      <td>borrow checker</td>
+      <td>Actor隔离</td>
+    </tr>
+    <tr>
+      <td>等待模式</td>
+      <td>wait() vs sleep()</td>
+      <td>channel阻塞</td>
+      <td>await tokio</td>
+      <td>Task.sleep</td>
+    </tr>
+    <tr>
+      <td>默认值陷阱</td>
+      <td>10连接</td>
+      <td>无限制channel</td>
+      <td>编译期发现</td>
+      <td>编译期发现</td>
+    </tr>
+  </table>
+
+  <div class="card" style="border-left:4px solid var(--accent-cyan);margin-top:16px;">
+    <strong>跨语言教训：</strong>
+    <ul style="margin:8px 0 0 0;">
+      <li>信任边界跨越：Cross Before You Use（Hyrum's Law）</li>
+      <li>并发安全：编译期保证 > 运行时检测 > 人工检查</li>
+      <li>默认值陷阱：Spring默认10连接 vs Go默认无限制channel</li>
+    </ul>
+  </div>
+</div>
+
+<!-- AI隐瞒弱点 -->
+<div class="section">
+  <div class="section-title">🤖 AI最可能隐瞒的弱点</div>
+  <ol>
+    <li><span class="badge badge-red">🔴</span> <strong>不提及性能影响</strong>：@Transactional在外部接口调用时的连接占用</li>
+    <li><span class="badge badge-red">🔴</span> <strong>不标注边界条件</strong>：单例模式没有volatile的性能代价</li>
+    <li><span class="badge badge-red">🔴</span> <strong>不解释隐藏行为</strong>：Boolean.FALSE的JVM缓存导致锁共享</li>
+    <li><span class="badge badge-yellow">⚠️</span> <strong>不提醒默认值危险</strong>：HikariCP默认10连接的生产风险</li>
+    <li><span class="badge badge-yellow">⚠️</span> <strong>不说明懒加载副作用</strong>：N+1查询的指数级性能衰减</li>
+  </ol>
+</div>
+
+<!-- 检查清单 -->
+<div class="section">
+  <div class="section-title">✅ 审查Checklist更新</div>
+  <div class="card">
+    <h4 style="color:var(--accent-yellow);margin-bottom:12px;">新增检查项</h4>
+    <ul style="list-style:none;padding:0;">
+      <li>☐ <strong>并发安全</strong>：单例是否有volatile？锁对象是否为基础类型缓存？</li>
+      <li>☐ <strong>连接池配置</strong>：HikariCP是否超过默认10连接？</li>
+      <li>☐ <strong>事务边界</strong>：@Transactional是否用于外部接口调用？</li>
+      <li>☐ <strong>查询策略</strong>：关联查询是否N+1？是否用JOIN FETCH？</li>
+      <li>☐ <strong>异常处理</strong>：catch块是否有业务兜底还是静默吞噬？</li>
+      <li>☐ <strong>JSON序列化</strong>：实体是否有双向关联导致无限递归？</li>
+    </ul>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  代码审查练习 · Day9 · 2026-05-15<br>
+  来源：<a href="https://www.sonarsource.com/blog/gpt-5-5-biggest-blind-spot" style="color:var(--accent-blue);">SonarSource</a> · 
+  <a href="https://juejin.cn/post/7636555069221371931" style="color:var(--accent-blue);">掘金</a>
+</div>
+
+</body>
+</html>
