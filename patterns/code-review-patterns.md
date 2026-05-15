@@ -439,3 +439,237 @@ func syncWorkouts() async throws {
 - [ ] `asyncLet`变量是否在作用域内正确await？
 - [ ] 跨Actor调用是否显式使用`await`？
 - [ ] Sendable类型是否正确传递？
+
+---
+
+## 八、Java并发审查模式（2026-05-15新增）
+
+### 8.1 双重检查锁定陷阱 (S2168)
+
+> **核心原则：单例懒加载必须volatile或使用静态Holder模式**
+
+```java
+// ❌ 危险：无volatile，JVM可能重排序
+public class ResourceFactory {
+    private static Resource resource;
+    
+    public static Resource getInstance() {
+        if (resource == null) {
+            synchronized (ResourceFactory.class) {
+                if (resource == null)
+                    resource = new Resource();  // 部分构造对象暴露
+            }
+        }
+        return resource;
+    }
+}
+
+// ✅ 安全：静态内部类Holder
+private static class ResourceHolder {
+    public static final Resource resource = new Resource();
+}
+public static Resource getResource() {
+    return ResourceHolder.resource;  // JLS保证线程安全
+}
+
+// ✅ 安全：直接同步方法
+public static synchronized Resource getInstance() {
+    if (resource == null)
+        resource = new Resource();
+    return resource;
+}
+```
+
+### 8.2 基于值类的同步陷阱 (S1860)
+
+> **核心原则：禁止使用Boolean.FALSE/Integer/String字面量作为锁对象**
+
+```java
+// ❌ 危险：Boolean.FALSE是JVM缓存的共享对象
+private static final Boolean bLock = Boolean.FALSE;
+synchronized (bLock) { ... }  // 全应用共享同一把锁！
+
+// ✅ 安全：使用专用Object实例
+private static final Object lock = new Object();
+synchronized (lock) { ... }
+```
+
+**同样禁止作为锁对象的类型**：
+- `Boolean.FALSE/TRUE`
+- `Integer.valueOf(-128~127)`
+- `String`字面量
+- `List.of()`结果
+- `java.time`类型
+
+### 8.3 持有锁时Thread.sleep() (S2276)
+
+> **核心原则：synchronized块内使用Object.wait()而非Thread.sleep()**
+
+```java
+// ❌ 危险：sleep()不释放锁，导致其他线程死锁
+synchronized (monitor) {
+    while (!ready()) {
+        Thread.sleep(200);  // 持有锁休眠！
+    }
+}
+
+// ✅ 安全：wait()释放锁
+synchronized (monitor) {
+    while (!ready()) {
+        monitor.wait(200);  // 释放锁，允许其他线程进入
+    }
+}
+```
+
+### 8.4 Java并发审查checklist
+
+- [ ] 单例是否有volatile或使用静态Holder模式？
+- [ ] 锁对象是否为基础类型缓存(Boolean/Integer/String)？
+- [ ] synchronized块内是否使用了Thread.sleep()？
+- [ ] 是否需要wait()/notify()替代轮询+sleep()？
+
+---
+
+## 九、Spring Boot生产级配置审查模式（2026-05-15新增）
+
+### 9.1 HikariCP连接池陷阱
+
+> **核心原则：HikariCP默认10连接，生产必须按并发配置**
+
+```yaml
+# ❌ 危险：默认配置撑不住并发
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 10  # 默认只有10个连接
+
+# ✅ 安全：按并发配置
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 50  # 根据真实并发调整
+      connection-timeout: 30000
+      idle-timeout: 600000
+```
+
+**配置计算公式**：
+- `connections = ((core_count * 2) + spindle_count)`
+- 或根据压测结果：最大并发 / 平均响应时间 * 峰值时长
+
+### 9.2 @Transactional滥用
+
+> **核心原则：仅在真正的数据库操作上加事务，禁止用于外部接口调用**
+
+```java
+// ❌ 危险：外部接口调用加事务，占用连接不释放
+@Service
+public class PaymentService {
+    @Transactional  // 事务期间持有连接22秒！
+    public void processPayment(Order order) {
+        callExternalAPI1();  // 耗时2-4秒
+        callExternalAPI2();  // 耗时2-4秒
+    }
+}
+
+// ✅ 安全：仅数据库操作加事务
+@Service
+public class PaymentService {
+    @Transactional  // 仅数据库操作
+    public void savePaymentRecord(Payment p) {
+        paymentRepository.save(p);
+    }
+    
+    public void processPayment(Order order) {
+        callExternalAPI1();  // 外部调用不加事务
+        savePaymentRecord(...);
+    }
+}
+```
+
+**禁止加@Transactional的场景**：
+- 调用外部第三方接口
+- 批量解析CSV/Excel文件
+- 异步发送邮件消息
+- 等待第三方回调
+
+### 9.3 N+1查询陷阱
+
+> **核心原则：关联查询使用JOIN FETCH或@EntityGraph急加载**
+
+```java
+// ❌ 危险：懒加载导致N+1查询
+List<Order> orders = orderRepository.findAll();
+// 每条触发getUser() = 1 + N次额外查询
+
+// ✅ 安全：JOIN FETCH急加载
+@Query("SELECT o FROM Order o JOIN FETCH o.user")
+List<Order> findAllWithUser();
+
+// ✅ 安全：EntityGraph
+@EntityGraph(attributePaths = {"user"})
+List<Order> findAll();
+```
+
+### 9.4 异常静默吞噬
+
+> **核心原则：异常必须向上抛出或明确业务兜底，禁止静默吞噬**
+
+```java
+// ❌ 危险：catch后只打印日志，程序继续执行
+try {
+    paymentService.charge(user, amount);  // 支付失败
+} catch (PaymentException e) {
+    log.error("支付失败", e);
+    // 异常被吞，程序继续
+}
+orderService.complete(order);  // 用户扣费但订单完成
+
+// ✅ 安全：向上抛出异常
+try {
+    paymentService.charge(user, amount);
+} catch (PaymentException e) {
+    log.error("支付失败，回滚订单", e);
+    throw new OrderProcessingException("支付处理失败", e);
+}
+```
+
+### 9.5 Jackson无限递归
+
+> **核心原则：实体双向关联必须用@JsonIgnore阻断一方**
+
+```java
+// ❌ 危险：双向关联导致序列化栈溢出
+@Entity
+public class Order {
+    @OneToMany(mappedBy = "order")
+    List<OrderItem> items;  // → items[0].order → items → ...
+}
+
+@Entity
+public class OrderItem {
+    @ManyToOne
+    Order order;  // 反向引用
+}
+// Order → items → order → items → ... → StackOverflow!
+```
+
+```java
+// ✅ 安全：@JsonIgnore阻断反向关联
+@Entity
+public class Order {
+    @OneToMany(mappedBy = "order")
+    @JsonIgnore  // 序列化时忽略
+    List<OrderItem> items;
+}
+```
+
+### 9.6 Spring Boot审查checklist
+
+- [ ] HikariCP连接池是否超过默认10连接？
+- [ ] @Transactional是否用于外部接口调用？
+- [ ] 关联查询是否N+1？是否使用JOIN FETCH？
+- [ ] catch块是否有业务兜底还是静默吞噬？
+- [ ] 实体是否有双向@OneToMany+@ManyToOne？
+- [ ] 是否有application-prod.yml专属生产配置？
+- [ ] 缓存命中率是否足够高（>70%）？
+- [ ] 开发环境与生产环境是否一致（Java版本/数据库版本/OS）？
