@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day13 · AI 编程代码审查审美</title>
+<style>
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-card: #2d2d2d;
+  --bg-code: #1a1a1a;
+  --border: #404040;
+  --text-primary: #d4d4d4;
+  --text-muted: #8a8a8a;
+  --accent-red: #f44747;
+  --accent-yellow: #dcdcaa;
+  --accent-green: #6a9955;
+  --accent-blue: #569cd6;
+  --accent-orange: #ce9178;
+  --accent-purple: #c586c0;
+  --accent-cyan: #4ec9b0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+.top-bar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-bar h1 {
+  font-size: 18px;
+  color: var(--accent-yellow);
+  font-weight: 700;
+}
+
+.top-bar .meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hero {
+  min-height: 360px;
+  display: grid;
+  align-items: end;
+  padding: 36px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(rgba(30,30,30,0.34), rgba(30,30,30,0.94)),
+    url("https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1800&q=80");
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 20px;
+}
+
+.hero h2 {
+  font-size: 36px;
+  line-height: 1.15;
+  max-width: 760px;
+  color: #fff;
+}
+
+.hero p {
+  margin-top: 12px;
+  max-width: 760px;
+  color: #d7d7d7;
+}
+
+.section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-orange);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.card h3 {
+  font-size: 15px;
+  color: var(--accent-cyan);
+  margin-bottom: 8px;
+}
+
+.card p, .card li {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.tone {
+  border-left: 4px solid var(--accent-blue);
+}
+
+.tone.bad { border-left-color: var(--accent-red); }
+.tone.good { border-left-color: var(--accent-green); }
+.tone.warn { border-left-color: var(--accent-yellow); }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.badge-red { background: rgba(244,71,71,0.18); color: var(--accent-red); }
+.badge-green { background: rgba(106,153,85,0.2); color: var(--accent-green); }
+.badge-yellow { background: rgba(220,220,170,0.16); color: var(--accent-yellow); }
+.badge-blue { background: rgba(86,156,214,0.18); color: var(--accent-blue); }
+.badge-purple { background: rgba(197,134,192,0.16); color: var(--accent-purple); }
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+code {
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 13px;
+  color: #d7d7d7;
+}
+
+ul {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+li { margin: 6px 0; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 13px;
+}
+
+th {
+  color: var(--accent-yellow);
+  background: var(--bg-secondary);
+}
+
+.source-link {
+  display: inline-block;
+  color: var(--accent-blue);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin: 5px 5px 5px 0;
+  font-size: 12px;
+}
+
+.source-link:hover {
+  border-color: var(--accent-blue);
+}
+
+.radar {
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-top: 12px;
+}
+
+.radar div {
+  background: var(--bg-secondary);
+  padding: 10px;
+  font-size: 13px;
+}
+
+.radar .head {
+  color: var(--accent-yellow);
+  font-weight: 700;
+}
+
+.quote {
+  border-left: 4px solid var(--accent-purple);
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  color: #e2e2e2;
+  margin: 12px 0;
+}
+
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 760px) {
+  .container { padding: 16px; }
+  .hero { padding: 24px; min-height: 320px; }
+  .hero h2 { font-size: 28px; }
+  .grid, .grid-3 { grid-template-columns: 1fr; }
+  .radar { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>Day13 · AI 编程代码审查审美</h1>
+  <div class="meta">2026-05-18 · 真实 Bug 参考 · 跨语言审美雷达</div>
+</div>
+
+<div class="container">
+  <section class="hero">
+    <div>
+      <h2>不要被“像样”的代码骗过去</h2>
+      <p>今天练的是代码审美：识别 AI 生成代码里的薄、油、虚，以及真正稳、硬、有边界感的工程质地。</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">核心判断</div>
+    <div class="grid">
+      <div class="card tone bad">
+        <h3>AI 代码常见错觉</h3>
+        <ul>
+          <li>看起来完整，但没有边界</li>
+          <li>看起来现代，但没有资源预算</li>
+          <li>看起来抽象，但没有真实需求</li>
+          <li>看起来自信，但没有证据链</li>
+        </ul>
+      </div>
+      <div class="card tone good">
+        <h3>审查时真正要看</h3>
+        <ul>
+          <li>契约是否被显式建模</li>
+          <li>失败是否可恢复、可定位</li>
+          <li>资源是否有上限</li>
+          <li>依赖、API、结论是否有证据</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">真实 Bug 参考</div>
+    <a class="source-link" href="https://github.com/BerriAI/litellm/issues/11085">LiteLLM #11085</a>
+    <a class="source-link" href="https://github.com/BerriAI/litellm/issues/25321">LiteLLM #25321</a>
+    <a class="source-link" href="https://arxiv.org/abs/2310.02059">Copilot Security Study</a>
+    <a class="source-link" href="https://arxiv.org/abs/2406.10279">Package Hallucinations</a>
+    <a class="source-link" href="https://snyk.io/articles/package-hallucinations/">Snyk Package Hallucinations</a>
+    <a class="source-link" href="https://arstechnica.com/gadgets/2025/05/open-source-project-curl-is-sick-of-users-submitting-ai-slop-vulnerabilities/">curl AI slop reports</a>
+    <a class="source-link" href="https://stackoverflow.blog/2024/09/20/detecting-errors-in-ai-generated-code/">Stack Overflow AI code errors</a>
+  </section>
+
+  <section class="section">
+    <div class="section-title">四个真实参照提炼</div>
+    <div class="grid">
+      <div class="card tone bad">
+        <span class="badge badge-red">契约错位</span>
+        <h3>LiteLLM adapter</h3>
+        <p>字段名相似不等于语义相同。provider 适配层要有 capability model，而不是把一套 payload 塞给所有后端。</p>
+        <pre><code>payload = {
+    "model": model,
+    "messages": messages,
+    "reasoning_effort": "low",
+    "tools": tools,
+}</code></pre>
+      </div>
+      <div class="card tone warn">
+        <span class="badge badge-yellow">教程感</span>
+        <h3>Copilot security weaknesses</h3>
+        <p>AI 代码常常流畅、安全感很低。最常见写法不等于生产安全写法。</p>
+        <pre><code>query = f"SELECT * FROM users WHERE email = '{email}'"</code></pre>
+      </div>
+      <div class="card tone bad">
+        <span class="badge badge-purple">依赖幻觉</span>
+        <h3>Package hallucination</h3>
+        <p>包名看起来像真的，可能正是风险所在。依赖不是修辞，是供应链债务。</p>
+        <pre><code>import { sanitizePaymentMemo } from "secure-payment-utils";</code></pre>
+      </div>
+      <div class="card tone good">
+        <span class="badge badge-blue">证据链</span>
+        <h3>curl AI vulnerability reports</h3>
+        <p>差的审查意见像判词，好的审查意见像实验记录：版本、入口、复现、栈、修复、回归测试。</p>
+        <pre><code>This may lead to remote code execution under certain conditions.</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">跨语言审美雷达</div>
+    <div class="radar">
+      <div class="head">语言</div>
+      <div class="head">AI 常见气质</div>
+      <div class="head">好品味</div>
+
+      <div>Python</div>
+      <div>except 后返回默认值，字典随手取字段，字符串拼 SQL/Shell</div>
+      <div>输入模型、异常分类、Decimal、带业务 id 的日志</div>
+
+      <div>TypeScript</div>
+      <div>写了类型又 as any，前端隐藏按钮当权限，HTML 信任来源不明</div>
+      <div>unknown + schema parse，权限后端判定，输出清洗</div>
+
+      <div>Go</div>
+      <div>错误被忽略，goroutine 无 context，无并发上限</div>
+      <div>errgroup.WithContext，SetLimit，错误加上下文</div>
+
+      <div>Rust</div>
+      <div>以为编译过就安全，外部输入 unwrap，路径边界未证明</div>
+      <div>不用 unwrap 处理外部输入，原子文件语义，先问所有权再上锁</div>
+
+      <div>Swift</div>
+      <div>nil 被美化为空字符串，Task 隐式捕获 self，UI 跨 actor</div>
+      <div>Optional 保留语义，MainActor 明确，长生命周期任务可取消</div>
+
+      <div>Java / Spring</div>
+      <div>@Transactional 到处贴，runAsync 不传 executor，Controller 写业务流程</div>
+      <div>事务边界短，outbox，隔离线程池，幂等下沉数据库约束</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">审美词典</div>
+    <div class="grid-3">
+      <div class="card tone bad">
+        <h3>薄</h3>
+        <p>只有 happy path，缺少边界、异常、日志、回滚、限流。</p>
+      </div>
+      <div class="card tone warn">
+        <h3>油</h3>
+        <p>抽象很多、命名漂亮，但没有真实复杂度支撑。</p>
+      </div>
+      <div class="card tone bad">
+        <h3>虚</h3>
+        <p>解释比代码可靠，事实链断裂，结论没有文档、源码或测试证明。</p>
+      </div>
+      <div class="card tone good">
+        <h3>硬</h3>
+        <p>类型、约束、边界、状态机写进代码和数据库，不靠口头约定。</p>
+      </div>
+      <div class="card tone good">
+        <h3>稳</h3>
+        <p>失败可恢复，重试幂等，资源有上限，日志能定位。</p>
+      </div>
+      <div class="card tone">
+        <h3>像样</h3>
+        <p>变量名合理、函数短、解释顺，但需要追问证据和异常路径。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">五个审查动作</div>
+    <table>
+      <thead>
+        <tr><th>动作</th><th>适用场景</th><th>提问</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>向代码要证据</td><td>AI 解释 API、框架、性能收益</td><td>这个行为来自哪份官方文档、源码分支或测试？</td></tr>
+        <tr><td>查相似 API 误用</td><td>跨 provider、跨云厂商、跨语言迁移</td><td>同名字段在目标后端语义是否一致？</td></tr>
+        <tr><td>从异常路径读设计</td><td>支付、任务、消息、文件、网络</td><td>第 N 步成功、第 N+1 步失败后，系统是什么状态？</td></tr>
+        <tr><td>把新增依赖当 PR 主角</td><td>AI 新增 import/package</td><td>这个包是否真实、必要、可信？</td></tr>
+        <tr><td>看抽象有没有第二个调用者</td><td>AI 过度设计</td><td>这个接口、工厂、策略对象服务的变化点是什么？</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <div class="section-title">高价值问题清单</div>
+    <div class="quote">
+      这段代码是否只证明了 happy path？边界是类型保证、数据库保证，还是注释保证？失败后是否可重试、可恢复、可定位？审查意见是否能复现，还是只有严重性形容词？
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>代码层</h3>
+        <ul>
+          <li>Optional/null/空字符串是否被混为一谈？</li>
+          <li>错误是否被整理成无信息的 false/null/默认值？</li>
+          <li>安全动作是否使用安全 API，而不是手写字符串处理？</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>系统层</h3>
+        <ul>
+          <li>并发、连接、内存、队列是否有预算？</li>
+          <li>新增依赖是否真实存在并值得引入？</li>
+          <li>AI 是否把一个生态的 API 套到了另一个生态？</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="footer">
+  Day13 · AI 编程代码审查审美 · 2026-05-18
+</div>
+</body>
+</html>

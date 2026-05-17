@@ -603,6 +603,116 @@ body {
  */
 const reviewDays = [
   {
+    day: "Day13",
+    date: "2026-05-18",
+    focus: "AI编程代码审查审美：真实Bug参考与跨语言雷达",
+    samples: [
+      {
+        name: "LiteLLM适配层契约错位",
+        langs: ["py"],
+        findings: [
+          "🔴 字段名相似不等于语义相同，provider adapter需要capability model",
+          "🔴 unsupported params和streaming tool_use不能靠猜",
+          {good:true, text:"✅ 好品味：白名单、转换日志、contract tests"}
+        ]
+      },
+      {
+        name: "Copilot安全弱点 + 包名幻觉",
+        langs: ["js", "py", "go", "rust"],
+        findings: [
+          "🔴 AI代码常有教程感：流畅但省略生产安全边界",
+          "🔴 幻觉依赖看起来像真的，可能变成供应链入口",
+          {good:true, text:"✅ 好品味：参数化、安全API、依赖真实性验证"}
+        ]
+      },
+      {
+        name: "审美词典：薄、油、虚、硬、稳",
+        langs: ["java", "swift", "go", "rust", "ts"],
+        findings: [
+          "薄：只有happy path，缺少失败路径和资源边界",
+          "虚：解释比代码可靠，事实链断裂",
+          {good:true, text:"稳：失败可恢复、重试幂等、资源有上限、日志能定位"}
+        ]
+      }
+    ],
+    md: "days/20260518.md",
+    html: "days/20260518.html"
+  },
+  {
+    day: "Day12",
+    date: "2026-05-17",
+    focus: "风控批处理、动态 SQL 与线程池资源治理",
+    samples: [
+      {
+        name: "AI生成风控重算任务",
+        langs: ["java"],
+        findings: [
+          "🔴 动态SQL拼接后台参数 → 内部入口也可能SQL注入",
+          "🔴 runAsync默认commonPool跑阻塞IO → 线程池与连接池失控",
+          "🔴 一次性加载全量交易 → 内存暴涨且失败不可恢复",
+          {good:true, text:"✅ 修复：参数化SQL + 分页游标 + batch_id + 隔离线程池"}
+        ]
+      },
+      {
+        name: "批处理可恢复性审查",
+        langs: ["java"],
+        findings: [
+          "🔴 无批次表、无失败明细、无last_processed_id",
+          "🔴 风控结果直接覆盖主表，缺少risk_version与审计线索",
+          "✅ 修复：结果表幂等写入 + 失败明细表 + 断点续跑"
+        ]
+      },
+      {
+        name: "今日模式积累",
+        langs: ["java"],
+        findings: [
+          {good:true, text:"默认线程池误用：先问线程从哪来、并发上限是多少"},
+          {good:true, text:"批处理不可恢复：成功路径之外，要能知道停在哪、坏在哪、如何重来"},
+          {good:true, text:"动态SQL伪内部安全：内部入口也是输入边界"}
+        ]
+      }
+    ],
+    md: "days/20260517.md",
+    html: null
+  },
+  {
+    day: "Day11",
+    date: "2026-05-16",
+    focus: "支付回调幂等、事务边界与外部副作用",
+    samples: [
+      {
+        name: "AI生成支付回调处理器",
+        langs: ["java"],
+        findings: [
+          "🔴 order.status == PAID 只能挡串行重复，挡不住并发重复",
+          "🔴 金额未与本地订单核对，小额回调可标记大额订单已支付",
+          "🔴 @Transactional内调用积分/短信 → 本地事务不能回滚远程世界",
+          {good:true, text:"✅ 修复：trade_no/event_id唯一索引 + 短事务 + outbox"}
+        ]
+      },
+      {
+        name: "支付链路反向审查",
+        langs: ["java"],
+        findings: [
+          "AI不确定渠道是否只回调一次：应按至少一次投递处理",
+          "AI不确定事务是否覆盖外部系统：不能覆盖HTTP副作用",
+          "AI不确定状态判断是否足够：最终幂等必须落到数据库约束"
+        ]
+      },
+      {
+        name: "今日模式积累",
+        langs: ["java"],
+        findings: [
+          {good:true, text:"状态判断不是幂等"},
+          {good:true, text:"事务里夹外部副作用"},
+          {good:true, text:"支付确认 + Outbox 架构"}
+        ]
+      }
+    ],
+    md: "days/20260516.md",
+    html: null
+  },
+  {
     day: "Day10",
     date: "2026-05-15",
     focus: "Java并发陷阱 & Spring Boot生产级配置误区",
@@ -1034,17 +1144,24 @@ const reviewDays = [
  */
 const patternLibs = [
   {
+    title: "AI编程审美",
+    icon: "🧭",
+    desc: "真实 AI 编程 bug 参考下的跨语言代码审查审美与判断词典",
+    count: 18,
+    file: "AI编程审美与真实Bug参考.md"
+  },
+  {
     title: "审查模式库",
     icon: "🔎",
     desc: "AI 生成代码的常见问题模式，供审查时快速识别",
-    count: 18,
+    count: 23,
     file: "审查模式库.md"
   },
   {
     title: "架构模式库",
     icon: "🏗️",
     desc: "好设计与坏设计片段，供架构学习和代码审查参考",
-    count: 12,
+    count: 15,
     file: "架构模式库.md"
   }
 ];
